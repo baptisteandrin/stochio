@@ -1,0 +1,8 @@
+# Clés API — NE JAMAIS pousser sur GitHub
+.streamlit/secrets.toml
+
+# Fichiers locaux
+*.xlsx
+__pycache__/
+*.pyc
+.stochio_config.json
