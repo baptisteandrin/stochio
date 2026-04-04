@@ -4,4 +4,4 @@ pubchempy
 reportlab
 groq
 openpyxl
-google-generativeai
+google-genai
