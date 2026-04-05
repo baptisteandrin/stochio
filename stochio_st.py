@@ -650,21 +650,16 @@ with tab_r:
     inv = load_inventaire()
     if inv:
         noms_inv = [p["nom"] for p in inv]
-        search = st.text_input("📦 Rechercher dans mon inventaire",
-                               placeholder="Taper un nom de produit…", key="_inv_search")
-        if search:
-            matches = [p for p in inv if search.lower() in p["nom"].lower()][:8]
-            if matches:
-                seen = set()
-                for i, m in enumerate(matches):
-                    if m["nom"] in seen:
-                        continue
-                    seen.add(m["nom"])
-                    label = f"{m['nom']}  —  {m['mw']} g/mol" if m["mw"] else m["nom"]
-                    if st.button(label, key=f"_inv_btn_{i}_{m['nom'][:20]}"):
-                        st.session_state._pc_prefill = {"name": m["nom"], "mw": m["mw"] or 0}
-            else:
-                st.caption("Aucun résultat")
+        noms_uniq = list(dict.fromkeys(noms_inv))
+        sel_inv = st.selectbox("📦 Depuis mon inventaire", noms_uniq,
+                               index=None, placeholder="Taper pour rechercher…", key="_inv_sel")
+        if sel_inv:
+            match = next((p for p in inv if p["nom"] == sel_inv), None)
+            if match:
+                st.session_state._pc_prefill = {"name": match["nom"], "mw": match["mw"] or 0}
+        elif sel_inv is None and st.session_state.get("_inv_sel_was_set"):
+            st.session_state._pc_prefill = None
+        st.session_state["_inv_sel_was_set"] = sel_inv is not None
     prefill = st.session_state._pc_prefill or {}
 
     with st.form("form_add", clear_on_submit=True):
