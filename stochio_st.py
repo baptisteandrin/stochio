@@ -650,7 +650,15 @@ with tab_r:
     inv = load_inventaire()
     if inv:
         noms_inv = [p["nom"] for p in inv]
-        sel_inv = st.selectbox("📦 Depuis mon inventaire", ["— sélectionner —"] + noms_inv, key="_inv_sel")
+        col_sel, col_clr = st.columns([5, 1])
+        with col_sel:
+            sel_inv = st.selectbox("📦 Depuis mon inventaire", ["— sélectionner —"] + noms_inv, key="_inv_sel")
+        with col_clr:
+            st.write("")
+            if st.button("✖ Effacer", key="_inv_clr"):
+                st.session_state._inv_sel = "— sélectionner —"
+                st.session_state._pc_prefill = None
+                st.rerun()
         if sel_inv != "— sélectionner —":
             match = next((p for p in inv if p["nom"] == sel_inv), None)
             if match:
