@@ -88,6 +88,23 @@ def charger_api_key(provider=None):
 # =============================================================================
 # Inventaire
 # =============================================================================
+def _parse_mw(mw_raw: str):
+    """Parse une valeur MW quelle que soit la locale (virgule décimale, espace milliers…)."""
+    s = mw_raw.strip().replace("\xa0", "").replace(" ", "")
+    if not s or s.lower() == "nan":
+        return None
+    try:
+        # Format français : 174,16 ou 1 174,16
+        if "," in s and "." not in s:
+            return float(s.replace(",", "."))
+        # Format anglais avec milliers : 1,174.16
+        if "," in s and "." in s:
+            return float(s.replace(",", ""))
+        return float(s)
+    except ValueError:
+        return None
+
+
 def _charger_inventaire():
     # Lecture depuis Google Sheets si credentials disponibles
     if _GSPREAD_OK and "gcp_service_account" in st.secrets:
@@ -111,11 +128,7 @@ def _charger_inventaire():
                 nom = str(row.get("Nom du Produit", "") or "").strip()
                 mw_raw = str(row.get("Masse Molaire (g/mol)", "") or "").strip()
                 if nom and nom.lower() != "nan":
-                    try:
-                        mw = float(mw_raw.replace(",", ".")) if mw_raw and mw_raw.lower() != "nan" else None
-                    except ValueError:
-                        mw = None
-                    res.append({"nom": nom, "mw": mw})
+                    res.append({"nom": nom, "mw": _parse_mw(mw_raw)})
             return res
         except Exception:
             pass
@@ -153,7 +166,7 @@ def _charger_pubchem_db():
     except Exception:
         return []
 
-@st.cache_data
+@st.cache_data(ttl=300)
 def load_inventaire():
     inv_local = _charger_inventaire()
     inv_pc = _charger_pubchem_db()
