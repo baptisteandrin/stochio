@@ -660,11 +660,9 @@ with tab_r:
                     if m["nom"] in seen:
                         continue
                     seen.add(m["nom"])
-                    if st.button(f"{m['nom']}  —  {m['mw']} g/mol" if m["mw"] else m["nom"],
-                                 key=f"_inv_btn_{i}_{m['nom'][:20]}"):
+                    label = f"{m['nom']}  —  {m['mw']} g/mol" if m["mw"] else m["nom"]
+                    if st.button(label, key=f"_inv_btn_{i}_{m['nom'][:20]}"):
                         st.session_state._pc_prefill = {"name": m["nom"], "mw": m["mw"] or 0}
-                        st.session_state["_inv_search"] = ""
-                        st.rerun()
             else:
                 st.caption("Aucun résultat")
     prefill = st.session_state._pc_prefill or {}
