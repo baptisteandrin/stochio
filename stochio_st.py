@@ -628,6 +628,20 @@ with tab_r:
                 st.success(f"✅ {pc_res['name']} — MW : {pc_res['mw']} g/mol — {pc_res['formula']}")
                 st.session_state._pc_prefill = pc_res
 
+    # ── Inventaire personnel ─────────────────────────────────────────────────
+    with st.expander("📦 Rechercher dans mon inventaire", expanded=False):
+        inv = load_inventaire()
+        if inv:
+            noms_inv = [p["nom"] for p in inv]
+            sel_inv = st.selectbox("Produit", ["— sélectionner —"] + noms_inv, key="_inv_sel")
+            if sel_inv != "— sélectionner —":
+                match = next((p for p in inv if p["nom"] == sel_inv), None)
+                if match:
+                    st.session_state._pc_prefill = {"name": match["nom"], "mw": match["mw"] or 0}
+                    st.success(f"✅ {match['nom']} — MW : {match['mw']} g/mol")
+        else:
+            st.info("Inventaire vide ou non accessible.")
+
     # ── Formulaire ajout ─────────────────────────────────────────────────────
     st.subheader("Ajouter un réactif")
     prefill = st.session_state._pc_prefill or {}
