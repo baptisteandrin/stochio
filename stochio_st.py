@@ -101,7 +101,11 @@ def _charger_inventaire():
             sheet_id = st.secrets.get("inventaire_sheet_id", "")
             sh = gc.open_by_key(sheet_id)
             ws = sh.get_worksheet(0)
-            rows = ws.get_all_records()
+            all_vals = ws.get_all_values()
+            if not all_vals:
+                return []
+            headers = all_vals[0]
+            rows = [dict(zip(headers, r)) for r in all_vals[1:]]
             res = []
             for row in rows:
                 nom = str(row.get("Nom du Produit", "") or "").strip()
@@ -628,22 +632,16 @@ with tab_r:
                 st.success(f"✅ {pc_res['name']} — MW : {pc_res['mw']} g/mol — {pc_res['formula']}")
                 st.session_state._pc_prefill = pc_res
 
-    # ── Inventaire personnel ─────────────────────────────────────────────────
-    with st.expander("📦 Rechercher dans mon inventaire", expanded=False):
-        inv = load_inventaire()
-        if inv:
-            noms_inv = [p["nom"] for p in inv]
-            sel_inv = st.selectbox("Produit", ["— sélectionner —"] + noms_inv, key="_inv_sel")
-            if sel_inv != "— sélectionner —":
-                match = next((p for p in inv if p["nom"] == sel_inv), None)
-                if match:
-                    st.session_state._pc_prefill = {"name": match["nom"], "mw": match["mw"] or 0}
-                    st.success(f"✅ {match['nom']} — MW : {match['mw']} g/mol")
-        else:
-            st.info("Inventaire vide ou non accessible.")
-
     # ── Formulaire ajout ─────────────────────────────────────────────────────
     st.subheader("Ajouter un réactif")
+    inv = load_inventaire()
+    if inv:
+        noms_inv = [p["nom"] for p in inv]
+        sel_inv = st.selectbox("📦 Depuis mon inventaire", ["— sélectionner —"] + noms_inv, key="_inv_sel")
+        if sel_inv != "— sélectionner —":
+            match = next((p for p in inv if p["nom"] == sel_inv), None)
+            if match:
+                st.session_state._pc_prefill = {"name": match["nom"], "mw": match["mw"] or 0}
     prefill = st.session_state._pc_prefill or {}
 
     with st.form("form_add", clear_on_submit=True):
