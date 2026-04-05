@@ -663,32 +663,36 @@ with tab_r:
     prefill = st.session_state._pc_prefill or {}
 
     with st.form("form_add", clear_on_submit=True):
-        fc1, fc2 = st.columns([2, 1])
-        with fc1:
+        already_lim = any(r["role"] == "Limitant" for r in st.session_state.reagents)
+        c1, c2, c3, c4 = st.columns([3, 1.5, 1.5, 2])
+        with c1:
             f_name = st.text_input("Nom *", value=prefill.get("name", ""))
-        with fc2:
+        with c2:
+            f_role = st.selectbox("Rôle", ROLES, index=1 if already_lim else 0)
+        with c3:
             f_mw = st.number_input("MW (g/mol) *", value=float(prefill.get("mw") or 0),
                                     min_value=0.0, step=0.01, format="%.4f")
+        with c4:
+            masse_label = "Masse (g) *" if f_role == "Limitant" else "Équivalents *"
+            masse_step  = 0.001 if f_role == "Limitant" else 0.1
+            masse_def   = 0.0   if f_role == "Limitant" else 1.0
+            f_val_str   = st.text_input(masse_label, value="",
+                                        placeholder="ex : 0.250" if f_role == "Limitant" else "ex : 1.0")
 
-        fr1, fr2, fr3 = st.columns(3)
-        with fr1:
-            already_lim = any(r["role"] == "Limitant" for r in st.session_state.reagents)
-            f_role = st.selectbox("Rôle", ROLES, index=1 if already_lim else 0)
-        with fr2:
-            if f_role == "Limitant":
-                f_val = st.number_input("Masse (g) *", value=0.0, min_value=0.0,
-                                         step=0.001, format="%.4f")
-            else:
-                f_val = st.number_input("Équivalents *", value=1.0, min_value=0.0,
-                                         step=0.1, format="%.3f")
-        with fr3:
+        cp1, cp2 = st.columns(2)
+        with cp1:
             f_purity = st.number_input("Pureté (%)", value=100.0,
                                         min_value=0.1, max_value=100.0, step=0.1)
-
-        f_density = st.number_input("Densité (g/mL) — optionnel", value=0.0,
-                                     min_value=0.0, step=0.001, format="%.4f")
+        with cp2:
+            f_density = st.number_input("Densité (g/mL) — optionnel", value=0.0,
+                                         min_value=0.0, step=0.001, format="%.4f")
 
         add_btn = st.form_submit_button("➕ Ajouter le réactif", width="stretch")
+
+        try:
+            f_val = float(f_val_str.replace(",", ".")) if f_val_str.strip() else 0.0
+        except ValueError:
+            f_val = 0.0
 
         if add_btn:
             err = None
