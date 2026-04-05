@@ -650,11 +650,17 @@ with tab_r:
     inv = load_inventaire()
     if inv:
         noms_inv = [p["nom"] for p in inv]
-        sel_inv = st.selectbox("📦 Depuis mon inventaire", noms_inv, index=None,
-                               placeholder="Taper pour rechercher…", key="_inv_sel")
-        if sel_inv is not None and sel_inv != st.session_state.get("_inv_sel_prev"):
-            st.session_state._inv_sel_prev = sel_inv
-        if sel_inv is None:
+        search = st.text_input("📦 Rechercher dans mon inventaire", placeholder="Taper un nom…", key="_inv_search")
+        if search:
+            matches = [p for p in inv if search.lower() in p["nom"].lower()]
+            if matches:
+                sel_inv = st.selectbox("Résultats", [p["nom"] for p in matches], key="_inv_sel")
+            else:
+                st.caption("Aucun résultat")
+                sel_inv = None
+                st.session_state._pc_prefill = None
+        else:
+            sel_inv = None
             st.session_state._pc_prefill = None
         if sel_inv:
             match = next((p for p in inv if p["nom"] == sel_inv), None)
