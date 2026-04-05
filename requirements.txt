@@ -1,4 +1,6 @@
 streamlit
+gspread
+google-auth
 pandas
 pubchempy
 reportlab

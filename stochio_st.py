@@ -32,6 +32,13 @@ try:
 except ImportError:
     _GEMINI_OK = False
 
+try:
+    import gspread
+    from google.oauth2.service_account import Credentials
+    _GSPREAD_OK = True
+except ImportError:
+    _GSPREAD_OK = False
+
 from reportlab.lib.pagesizes import landscape, A4
 from reportlab.lib import colors as rl_colors
 from reportlab.lib.units import cm
@@ -82,6 +89,33 @@ def charger_api_key(provider=None):
 # Inventaire
 # =============================================================================
 def _charger_inventaire():
+    # Lecture depuis Google Sheets si credentials disponibles
+    if _GSPREAD_OK and "gcp_service_account" in st.secrets:
+        try:
+            creds = Credentials.from_service_account_info(
+                dict(st.secrets["gcp_service_account"]),
+                scopes=["https://www.googleapis.com/auth/spreadsheets.readonly",
+                        "https://www.googleapis.com/auth/drive.readonly"],
+            )
+            gc = gspread.authorize(creds)
+            sheet_id = st.secrets.get("inventaire_sheet_id", "")
+            sh = gc.open_by_key(sheet_id)
+            ws = sh.get_worksheet(0)
+            rows = ws.get_all_records()
+            res = []
+            for row in rows:
+                nom = str(row.get("Nom du Produit", "") or "").strip()
+                mw_raw = str(row.get("Masse Molaire (g/mol)", "") or "").strip()
+                if nom and nom.lower() != "nan":
+                    try:
+                        mw = float(mw_raw.replace(",", ".")) if mw_raw and mw_raw.lower() != "nan" else None
+                    except ValueError:
+                        mw = None
+                    res.append({"nom": nom, "mw": mw})
+            return res
+        except Exception:
+            pass
+    # Fallback : fichier local
     try:
         df = pd.read_excel(INVENTAIRE_PATH, dtype=str)
         res = []
