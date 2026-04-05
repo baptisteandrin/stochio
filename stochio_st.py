@@ -655,9 +655,13 @@ with tab_r:
         if search:
             matches = [p for p in inv if search.lower() in p["nom"].lower()][:8]
             if matches:
-                for m in matches:
+                seen = set()
+                for i, m in enumerate(matches):
+                    if m["nom"] in seen:
+                        continue
+                    seen.add(m["nom"])
                     if st.button(f"{m['nom']}  —  {m['mw']} g/mol" if m["mw"] else m["nom"],
-                                 key=f"_inv_btn_{m['nom']}"):
+                                 key=f"_inv_btn_{i}_{m['nom'][:20]}"):
                         st.session_state._pc_prefill = {"name": m["nom"], "mw": m["mw"] or 0}
                         st.session_state["_inv_search"] = ""
                         st.rerun()
