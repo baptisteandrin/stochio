@@ -879,7 +879,12 @@ ul[role="listbox"] li:hover {{
 }}
 [data-testid="stExpander"] summary p {{
     color: {_th.th_exp_title} !important;
-    {_fcss("th_exp_title", True)};
+    font-weight: {'bold' if _th.get('th_exp_title_bold', True) else 'normal'} !important;
+    font-style: {'italic' if _th.get('th_exp_title_italic', False) else 'normal'} !important;
+}}
+[data-testid="stExpander"] summary p > div,
+[data-testid="stExpander"] summary p > span:not([class*="material"]) {{
+    {f"font-family: {_th.get('th_exp_title_family','Par défaut')} !important;" if _th.get('th_exp_title_family','Par défaut') != 'Par défaut' else ''}
 }}
 
 /* ── Tableau ── */
