@@ -562,48 +562,72 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-/* ── Fond général ── */
-[data-testid="stAppViewContainer"] { background: #f0f4f8; }
+/* ── Fond & texte global ── */
+[data-testid="stAppViewContainer"] { background: #f1f5f9; }
 [data-testid="stMain"] { padding: 1rem 0.75rem 2rem; }
 
+/* Force tout le texte en noir foncé */
+p, span, div, label, small, .stMarkdown, .stText,
+[data-testid="stWidgetLabel"] > div,
+[data-testid="stCaptionContainer"] { color: #0f172a !important; }
+
+h1, h2, h3, h4 { color: #0f172a !important; font-weight: 700 !important; }
+
 /* ── Onglets ── */
+.stTabs [data-baseweb="tab-list"] { background: #e2e8f0; border-radius: 8px; padding: 4px; }
 .stTabs [data-baseweb="tab"] {
-    padding: 8px 18px; font-weight: 600;
-    border-radius: 6px 6px 0 0;
-    background: #e2e8f0; color: #334155;
+    padding: 8px 16px; font-weight: 700; font-size: 14px;
+    border-radius: 6px; color: #334155 !important; background: transparent;
 }
 .stTabs [aria-selected="true"] {
-    background: #2563eb !important; color: #ffffff !important;
+    background: #1e40af !important; color: #ffffff !important;
 }
 
 /* ── Info box résultat ── */
 .info-box {
     background: #1e40af; border-radius: 10px;
-    padding: 12px 18px; margin: 6px 0;
-    color: #ffffff; font-size: 15px; font-weight: 600;
+    padding: 14px 18px; margin: 8px 0;
+    color: #ffffff !important; font-size: 16px; font-weight: 700;
 }
+
+/* ── Carte réactif colorée ── */
+.rcard {
+    background: #ffffff; border-radius: 10px;
+    border-left: 5px solid #64748b;
+    padding: 10px 14px; margin-bottom: 6px;
+}
+.rcard.lim  { border-left-color: #2563eb; }
+.rcard.reac { border-left-color: #16a34a; }
+.rcard.solv { border-left-color: #d97706; }
+.rcard.cat  { border-left-color: #9333ea; }
+
+.rcard .rname { font-size: 15px; font-weight: 700; color: #0f172a !important; }
+.rcard .rinfo { font-size: 13px; color: #334155 !important; margin-top: 2px; }
 
 /* ── Badge rôle ── */
 .role-badge {
-    display: inline-block; border-radius: 12px; padding: 2px 10px;
-    font-size: 12px; font-weight: 700; margin-left: 6px;
-    color: #1e293b;
+    display: inline-block; border-radius: 6px; padding: 1px 8px;
+    font-size: 11px; font-weight: 700; margin-left: 8px;
+    color: #ffffff !important;
+}
+.badge-lim  { background: #2563eb; }
+.badge-reac { background: #16a34a; }
+.badge-solv { background: #d97706; }
+.badge-cat  { background: #9333ea; }
+.badge-aut  { background: #64748b; }
+
+/* ── Inputs ── */
+input, textarea { color: #0f172a !important; font-size: 15px !important; }
+[data-testid="stSelectbox"] { color: #0f172a !important; }
+
+/* ── Boutons ── */
+.stButton > button {
+    font-weight: 700; border-radius: 8px;
+    font-size: 14px; padding: 8px 14px;
 }
 
-/* ── Carte réactif ── */
-.reagent-card {
-    background: #ffffff; border: 1px solid #cbd5e1;
-    border-radius: 10px; padding: 10px 14px; margin-bottom: 8px;
-}
-
-/* ── Inputs plus lisibles sur mobile ── */
-@media (max-width: 768px) {
-    input, select, textarea { font-size: 16px !important; }
-    .stButton > button { font-size: 15px; padding: 10px; border-radius: 8px; }
-}
-
-/* ── Titres ── */
-h2, h3 { color: #1e293b !important; }
+/* ── Tableau résultats ── */
+.dataframe td, .dataframe th { color: #0f172a !important; font-size: 13px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -758,26 +782,30 @@ with tab_r:
     if st.session_state.reagents:
         st.subheader("Réactifs ajoutés")
 
-        ROLE_COLORS = {
-            "Limitant":   "#dbeafe",
-            "Réactif":    "#f1f5f9",
-            "Solvant":    "#fef9c3",
-            "Catalyseur": "#fce7f3",
-            "Autre":      "#f5f5f4",
+        ROLE_CSS = {
+            "Limitant":   ("lim",  "badge-lim"),
+            "Réactif":    ("reac", "badge-reac"),
+            "Solvant":    ("solv", "badge-solv"),
+            "Catalyseur": ("cat",  "badge-cat"),
+            "Autre":      ("",     "badge-aut"),
         }
 
         to_delete = None
         for i, r in enumerate(st.session_state.reagents):
+            card_cls, badge_cls = ROLE_CSS.get(r["role"], ("", "badge-aut"))
+            dens_txt = f" | d={r['density']}" if r.get("density") else ""
+            val_txt  = f"Masse : {r['mass_g']} g" if r["role"] == "Limitant" else f"Éq : {r['eq']}"
+
             col_info, col_edit, col_del = st.columns([3, 2, 1])
             with col_info:
-                badge_color = ROLE_COLORS.get(r["role"], "#f1f5f9")
                 st.markdown(
-                    f'**{r["name"]}**'
-                    f'<span class="role-badge" style="background:{badge_color}">{r["role"]}</span>',
+                    f'<div class="rcard {card_cls}">'
+                    f'<div class="rname">{r["name"]}'
+                    f'<span class="role-badge {badge_cls}">{r["role"]}</span></div>'
+                    f'<div class="rinfo">MW : {r["mw"]} g/mol | {val_txt} | Pureté : {r["purity"]}%{dens_txt}</div>'
+                    f'</div>',
                     unsafe_allow_html=True
                 )
-                dens_txt = f" | Densité : {r['density']}" if r.get("density") else ""
-                st.caption(f"MW : {r['mw']} g/mol | Pureté : {r['purity']}%{dens_txt}")
             with col_edit:
                 if r["role"] == "Limitant":
                     new_v = st.number_input(
@@ -797,8 +825,6 @@ with tab_r:
                 st.write("")
                 if st.button("🗑️", key=f"_del_{i}"):
                     to_delete = i
-
-            st.divider()
 
         if to_delete is not None:
             st.session_state.reagents.pop(to_delete)
