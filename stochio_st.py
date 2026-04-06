@@ -560,6 +560,41 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+# ---------- Persistance des paramètres de thème ----------
+_CONFIG_FILE = Path(__file__).parent / ".stochio_config.json"
+_TH_KEYS_PERSIST = [
+    "th_bg","th_text","th_font_size",
+    "th_ib_bg","th_ib_text","th_ib_fs",
+    "th_tab_bar","th_tab_text","th_tab_act_bg","th_tab_act_txt",
+    "th_inp_bg","th_inp_text","th_inp_border","th_inp_fs",
+    "th_form_bg","th_form_border","th_form_lbl","th_form_lbl_fs",
+    "th_sel_bg","th_sel_text","th_sel_border",
+    "th_exp_bg","th_exp_border","th_exp_title",
+    "th_card_bg","th_card_name_fs","th_card_info_fs",
+    "th_bord_lim","th_bord_reac","th_bord_solv","th_bord_cat","th_bord_aut",
+    "th_badge_lim","th_badge_reac","th_badge_solv","th_badge_cat","th_badge_aut",
+    "th_btn_bg","th_btn_text","th_btn_fs",
+    "cfg_layout",
+    "lbl_titre","lbl_tab_r","lbl_tab_t","lbl_tab_ia","lbl_tab_ex","lbl_tab_cfg",
+    "lbl_add","lbl_inv","lbl_list","lbl_cond","lbl_produit",
+    "lbl_resultats","lbl_ia","lbl_export",
+]
+
+def _save_config():
+    data = {k: st.session_state[k] for k in _TH_KEYS_PERSIST if k in st.session_state}
+    try:
+        _CONFIG_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception:
+        pass
+
+def _load_config():
+    if _CONFIG_FILE.exists():
+        try:
+            return json.loads(_CONFIG_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    return {}
+
 # ---------- Session state (avant CSS pour utiliser les couleurs) ----------
 def _init():
     defaults = {
@@ -641,9 +676,10 @@ def _init():
         "lbl_ia":         "Procédure IA",
         "lbl_export":     "Exporter",
     }
+    saved = _load_config()
     for k, v in defaults.items():
         if k not in st.session_state:
-            st.session_state[k] = v
+            st.session_state[k] = saved.get(k, v)
 
 _init()
 
@@ -1224,25 +1260,25 @@ with tab_ex:
 # TAB 5 — Paramètres
 # ===========================================================================
 def _cp(label, key):
-    """Color picker qui applique immédiatement."""
     v = st.color_picker(label, value=st.session_state[key], key=f"_cp_{key}")
     if v != st.session_state[key]:
         st.session_state[key] = v
+        _save_config()
         st.rerun()
 
 def _sl(label, key, lo, hi):
-    """Slider entier qui applique immédiatement."""
     v = st.slider(label, min_value=lo, max_value=hi,
                   value=st.session_state[key], step=1, key=f"_sl_{key}")
     if v != st.session_state[key]:
         st.session_state[key] = v
+        _save_config()
         st.rerun()
 
 def _ti(label, key):
-    """Text input pour renommer un titre."""
     v = st.text_input(label, value=st.session_state[key], key=f"_ti_{key}")
     if v != st.session_state[key]:
         st.session_state[key] = v
+        _save_config()
         st.rerun()
 
 _ALL_TH_KEYS = [
@@ -1440,5 +1476,9 @@ with tab_cfg:
         for k in _ALL_TH_KEYS:
             if k in st.session_state:
                 del st.session_state[k]
+        try:
+            _CONFIG_FILE.unlink(missing_ok=True)
+        except Exception:
+            pass
         st.rerun()
     st.markdown("*Stœchiométrie H&B · Streamlit + Gemini / Groq + PubChem*")
