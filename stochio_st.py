@@ -560,49 +560,77 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-st.markdown("""
+# ---------- Session state (avant CSS pour utiliser les couleurs) ----------
+def _init():
+    defaults = {
+        "reagents": [],
+        "prod": {"name": "", "mw": 0.0, "mw_manual": False,
+                 "yield": 1.0, "yield_manual": False,
+                 "mass": 0.0, "mass_manual": False, "density": 0.0},
+        "conditions": {"solvant": "", "temp": "", "time": ""},
+        "rxn_name": "Synthèse",
+        "procedure": "",
+        "chat_history": [],
+        "_pc_prefill": None,
+        # Thème
+        "th_bg":        "#f1f5f9",
+        "th_card":      "#ffffff",
+        "th_text":      "#0f172a",
+        "th_accent":    "#1e40af",
+        "th_font_size": 14,
+    }
+    for k, v in defaults.items():
+        if k not in st.session_state:
+            st.session_state[k] = v
+
+_init()
+
+# ---------- CSS dynamique ----------
+_th = st.session_state
+st.markdown(f"""
 <style>
 /* ── Fond & texte global ── */
-[data-testid="stAppViewContainer"] { background: #f1f5f9; }
-[data-testid="stMain"] { padding: 1rem 0.75rem 2rem; }
+[data-testid="stAppViewContainer"] {{ background: {_th.th_bg}; }}
+[data-testid="stMain"] {{ padding: 1rem 0.75rem 2rem; }}
 
-/* Force tout le texte en noir foncé */
 p, span, div, label, small, .stMarkdown, .stText,
 [data-testid="stWidgetLabel"] > div,
-[data-testid="stCaptionContainer"] { color: #0f172a !important; }
-
-h1, h2, h3, h4 { color: #0f172a !important; font-weight: 700 !important; }
+[data-testid="stCaptionContainer"] {{
+    color: {_th.th_text} !important;
+    font-size: {_th.th_font_size}px;
+}}
+h1, h2, h3, h4 {{ color: {_th.th_text} !important; font-weight: 700 !important; }}
 
 /* ── Onglets ── */
-.stTabs [data-baseweb="tab-list"] { background: #e2e8f0; border-radius: 8px; padding: 4px; }
-.stTabs [data-baseweb="tab"] {
-    padding: 8px 16px; font-weight: 700; font-size: 14px;
-    border-radius: 6px; color: #334155 !important; background: transparent;
-}
-.stTabs [aria-selected="true"] {
-    background: #1e40af !important; color: #ffffff !important;
-}
+.stTabs [data-baseweb="tab-list"] {{ background: #e2e8f0; border-radius: 8px; padding: 4px; }}
+.stTabs [data-baseweb="tab"] {{
+    padding: 8px 16px; font-weight: 700; font-size: {_th.th_font_size}px;
+    border-radius: 6px; color: {_th.th_text} !important; background: transparent;
+}}
+.stTabs [aria-selected="true"] {{
+    background: {_th.th_accent} !important; color: #ffffff !important;
+}}
 
 /* ── Info box résultat ── */
-.info-box {
-    background: #1e40af; border-radius: 10px;
+.info-box {{
+    background: {_th.th_accent}; border-radius: 10px;
     padding: 14px 18px; margin: 8px 0;
-    color: #ffffff !important; font-size: 16px; font-weight: 700;
-}
+    color: #ffffff !important; font-size: {_th.th_font_size + 2}px; font-weight: 700;
+}}
 
-/* ── Carte réactif colorée ── */
-.rcard {
-    background: #ffffff; border-radius: 10px;
+/* ── Carte réactif ── */
+.rcard {{
+    background: {_th.th_card}; border-radius: 10px;
     border-left: 5px solid #64748b;
     padding: 10px 14px; margin-bottom: 6px;
-}
-.rcard.lim  { border-left-color: #2563eb; }
-.rcard.reac { border-left-color: #16a34a; }
-.rcard.solv { border-left-color: #d97706; }
-.rcard.cat  { border-left-color: #9333ea; }
+}}
+.rcard.lim  {{ border-left-color: #2563eb; }}
+.rcard.reac {{ border-left-color: #16a34a; }}
+.rcard.solv {{ border-left-color: #d97706; }}
+.rcard.cat  {{ border-left-color: #9333ea; }}
 
-.rcard .rname { font-size: 15px; font-weight: 700; color: #0f172a !important; }
-.rcard .rinfo { font-size: 13px; color: #334155 !important; margin-top: 2px; }
+.rcard .rname {{ font-size: {_th.th_font_size + 1}px; font-weight: 700; color: {_th.th_text} !important; }}
+.rcard .rinfo {{ font-size: {_th.th_font_size - 1}px; color: {_th.th_text} !important; margin-top: 2px; }}
 
 /* ── Badge rôle ── */
 .role-badge {
@@ -617,38 +645,18 @@ h1, h2, h3, h4 { color: #0f172a !important; font-weight: 700 !important; }
 .badge-aut  { background: #64748b; }
 
 /* ── Inputs ── */
-input, textarea { color: #0f172a !important; font-size: 15px !important; }
-[data-testid="stSelectbox"] { color: #0f172a !important; }
+input, textarea {{ color: {_th.th_text} !important; font-size: {_th.th_font_size}px !important; }}
 
 /* ── Boutons ── */
-.stButton > button {
+.stButton > button {{
     font-weight: 700; border-radius: 8px;
-    font-size: 14px; padding: 8px 14px;
-}
+    font-size: {_th.th_font_size}px; padding: 8px 14px;
+}}
 
 /* ── Tableau résultats ── */
-.dataframe td, .dataframe th { color: #0f172a !important; font-size: 13px; }
+.dataframe td, .dataframe th {{ color: {_th.th_text} !important; font-size: {_th.th_font_size - 1}px; }}
 </style>
 """, unsafe_allow_html=True)
-
-# ---------- Session state ----------
-def _init():
-    defaults = {
-        "reagents": [],
-        "prod": {"name": "", "mw": 0.0, "mw_manual": False,
-                 "yield": 1.0, "yield_manual": False,
-                 "mass": 0.0, "mass_manual": False, "density": 0.0},
-        "conditions": {"solvant": "", "temp": "", "time": ""},
-        "rxn_name": "Synthèse",
-        "procedure": "",
-        "chat_history": [],
-        "_pc_prefill": None,
-    }
-    for k, v in defaults.items():
-        if k not in st.session_state:
-            st.session_state[k] = v
-
-_init()
 
 # ---------- Header ----------
 h1, h2 = st.columns([3, 2])
@@ -1082,27 +1090,58 @@ with tab_ex:
 # TAB 5 — Paramètres
 # ===========================================================================
 with tab_cfg:
+
+    # ── Apparence ────────────────────────────────────────────────────────────
+    st.subheader("🎨 Apparence")
+    st.markdown("Les changements s'appliquent immédiatement après chaque modification.")
+
+    ta1, ta2 = st.columns(2)
+    with ta1:
+        bg = st.color_picker("Fond de la page", value=st.session_state.th_bg, key="_th_bg")
+        if bg != st.session_state.th_bg:
+            st.session_state.th_bg = bg
+            st.rerun()
+
+        card = st.color_picker("Fond des cartes réactifs", value=st.session_state.th_card, key="_th_card")
+        if card != st.session_state.th_card:
+            st.session_state.th_card = card
+            st.rerun()
+
+    with ta2:
+        txt = st.color_picker("Couleur du texte", value=st.session_state.th_text, key="_th_text")
+        if txt != st.session_state.th_text:
+            st.session_state.th_text = txt
+            st.rerun()
+
+        acc = st.color_picker("Couleur accent (onglet actif, info box)", value=st.session_state.th_accent, key="_th_accent")
+        if acc != st.session_state.th_accent:
+            st.session_state.th_accent = acc
+            st.rerun()
+
+    fs = st.slider("Taille de police (px)", min_value=10, max_value=22,
+                   value=st.session_state.th_font_size, step=1, key="_th_fs")
+    if fs != st.session_state.th_font_size:
+        st.session_state.th_font_size = fs
+        st.rerun()
+
+    if st.button("↩️ Réinitialiser l'apparence"):
+        st.session_state.th_bg        = "#f1f5f9"
+        st.session_state.th_card      = "#ffffff"
+        st.session_state.th_text      = "#0f172a"
+        st.session_state.th_accent    = "#1e40af"
+        st.session_state.th_font_size = 14
+        st.rerun()
+
+    st.divider()
+
+    # ── IA ────────────────────────────────────────────────────────────────────
+    st.subheader("🤖 Statut IA")
     provider_actif = charger_provider()
     key_ok = bool(charger_api_key(provider_actif))
-
-    st.subheader("Statut IA")
     if key_ok:
         st.success(f"✅ Fournisseur actif : **{provider_actif}** — clé configurée")
     else:
         st.error("❌ Aucune clé API trouvée dans `.streamlit/secrets.toml`")
 
-    st.info(
-        "Les clés API sont stockées dans le fichier **`.streamlit/secrets.toml`** "
-        "sur votre PC et ne transitent jamais dans le navigateur.\n\n"
-        "Pour changer de fournisseur ou de clé, éditez directement ce fichier :\n"
-        "```\n"
-        "ai_provider = \"gemini\"   # ou \"groq\"\n"
-        "gemini_key  = \"AIza...\"\n"
-        "groq_key    = \"gsk_...\"\n"
-        "```"
-    )
-
     st.divider()
-    st.caption("**Accès téléphone** — lancez `streamlit run stochio_st.py` sur votre PC, "
-               "puis ouvrez `http://192.168.1.12:8501` depuis votre téléphone (même Wi-Fi).")
-    st.caption("**À propos** — Calculateur de Stœchiométrie H&B · Streamlit + Gemini 2.5 Flash / Groq llama-3.3-70b + PubChem")
+    st.markdown("**À propos** — Calculateur de Stœchiométrie H&B · Streamlit + Gemini / Groq + PubChem")
