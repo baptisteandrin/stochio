@@ -693,6 +693,9 @@ for i, r in enumerate(st.session_state.reagents):
             st.session_state.reagents[i]["mw"] = match["mw"]
             _updated = True
 if _updated:
+    # Forcer le data_editor à se reconstruire depuis session_state
+    if "_reagents_editor" in st.session_state:
+        del st.session_state["_reagents_editor"]
     st.rerun()
 
 col_title, col_reset = st.columns([4, 1])
@@ -759,17 +762,20 @@ if n_lim2 and results2:
     prod_name = st.session_state.prod["name"] or "Produit"
     df_res = build_display_df(st.session_state.reagents, results2, prod_result2, prod_name)
 
+    # Transposé : réactifs en lignes, propriétés en colonnes
+    df_t = df_res.T
+
     def _style_res(df):
         styles = pd.DataFrame("", index=df.index, columns=df.columns)
-        for col in df.columns:
-            if col == prod_name:
-                styles[col] = "background-color:#dcfce7; color:#15803d; font-weight:bold"
+        for row in df.index:
+            if row == prod_name:
+                styles.loc[row] = "background-color:#dcfce7; color:#15803d; font-weight:bold"
             else:
-                styles[col] = "background-color:#f8fafc; color:#1e293b"
+                styles.loc[row] = "background-color:#f8fafc; color:#1e293b"
         return styles
 
     st.subheader("📊 Résultats")
-    st.dataframe(df_res.style.apply(_style_res, axis=None), use_container_width=True)
+    st.dataframe(df_t.style.apply(_style_res, axis=None), use_container_width=True)
 
     cond  = st.session_state.conditions
     parts = []
