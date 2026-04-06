@@ -731,14 +731,20 @@ st.markdown(f"""
 @media (max-width: 900px) {{
     [data-testid="stMain"] {{ padding-bottom: 45vh !important; }}
 }}
-p, span, div, label, small, .stMarkdown, .stText,
+/* Texte général — ne pas appliquer la police aux icônes svg/button */
+p, .stMarkdown p, .stText,
 [data-testid="stWidgetLabel"] > div,
-[data-testid="stCaptionContainer"] {{
+[data-testid="stCaptionContainer"],
+[data-testid="stMarkdownContainer"] p {{
     color: {_th.th_text} !important;
     font-size: {_th.th_font_size}px;
     {_fcss("th")};
 }}
+label {{ color: {_th.th_text} !important; font-size: {_th.th_font_size}px; }}
 h1, h2, h3, h4 {{ color: {_th.th_text} !important; {_fcss("th", True)}; }}
+
+/* Protéger les icônes Streamlit */
+svg, [data-testid*="Icon"], button svg, summary svg {{ font-family: inherit; }}
 
 /* ── Onglets ── */
 .stTabs [data-baseweb="tab-list"] {{
@@ -862,7 +868,6 @@ ul[role="listbox"] li:hover {{
     border: 1px solid {_th.th_exp_border} !important;
     border-radius: 10px;
 }}
-[data-testid="stExpander"] summary,
 [data-testid="stExpander"] summary p {{
     color: {_th.th_exp_title} !important;
     {_fcss("th_exp_title", True)};
