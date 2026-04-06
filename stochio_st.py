@@ -572,12 +572,54 @@ def _init():
         "procedure": "",
         "chat_history": [],
         "_pc_prefill": None,
-        # Thème
-        "th_bg":        "#f1f5f9",
-        "th_card":      "#ffffff",
-        "th_text":      "#0f172a",
-        "th_accent":    "#1e40af",
-        "th_font_size": 14,
+        # ── Thème global ──
+        "th_bg":          "#f1f5f9",
+        "th_text":        "#0f172a",
+        "th_font_size":   14,
+        # ── Info box (résultat en haut) ──
+        "th_ib_bg":       "#1e40af",
+        "th_ib_text":     "#ffffff",
+        "th_ib_fs":       16,
+        # ── Onglets ──
+        "th_tab_bar":     "#e2e8f0",
+        "th_tab_text":    "#334155",
+        "th_tab_act_bg":  "#1e40af",
+        "th_tab_act_txt": "#ffffff",
+        # ── Cartes réactifs ──
+        "th_card_bg":     "#ffffff",
+        "th_card_name_fs": 15,
+        "th_card_info_fs": 13,
+        # ── Bordures par rôle ──
+        "th_bord_lim":    "#2563eb",
+        "th_bord_reac":   "#16a34a",
+        "th_bord_solv":   "#d97706",
+        "th_bord_cat":    "#9333ea",
+        "th_bord_aut":    "#64748b",
+        # ── Badges par rôle ──
+        "th_badge_lim":   "#2563eb",
+        "th_badge_reac":  "#16a34a",
+        "th_badge_solv":  "#d97706",
+        "th_badge_cat":   "#9333ea",
+        "th_badge_aut":   "#64748b",
+        # ── Boutons ──
+        "th_btn_bg":      "#1e40af",
+        "th_btn_text":    "#ffffff",
+        "th_btn_fs":      14,
+        # ── Titres / Labels ──
+        "lbl_titre":      "⚗️ Stœchiométrie H&B",
+        "lbl_tab_r":      "🧪 Réactifs",
+        "lbl_tab_t":      "📊 Tableau",
+        "lbl_tab_ia":     "🤖 IA",
+        "lbl_tab_ex":     "📤 Export",
+        "lbl_tab_cfg":    "⚙️ Paramètres",
+        "lbl_add":        "Ajouter un réactif",
+        "lbl_inv":        "📦 Depuis mon inventaire",
+        "lbl_list":       "Réactifs ajoutés",
+        "lbl_cond":       "Conditions réactionnelles",
+        "lbl_produit":    "Produit",
+        "lbl_resultats":  "📊 Résultats",
+        "lbl_ia":         "Procédure IA",
+        "lbl_export":     "Exporter",
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -592,7 +634,6 @@ st.markdown(f"""
 /* ── Fond & texte global ── */
 [data-testid="stAppViewContainer"] {{ background: {_th.th_bg}; }}
 [data-testid="stMain"] {{ padding: 1rem 0.75rem 2rem; }}
-
 p, span, div, label, small, .stMarkdown, .stText,
 [data-testid="stWidgetLabel"] > div,
 [data-testid="stCaptionContainer"] {{
@@ -602,66 +643,78 @@ p, span, div, label, small, .stMarkdown, .stText,
 h1, h2, h3, h4 {{ color: {_th.th_text} !important; font-weight: 700 !important; }}
 
 /* ── Onglets ── */
-.stTabs [data-baseweb="tab-list"] {{ background: #e2e8f0; border-radius: 8px; padding: 4px; }}
+.stTabs [data-baseweb="tab-list"] {{
+    background: {_th.th_tab_bar}; border-radius: 8px; padding: 4px;
+}}
 .stTabs [data-baseweb="tab"] {{
     padding: 8px 16px; font-weight: 700; font-size: {_th.th_font_size}px;
-    border-radius: 6px; color: {_th.th_text} !important; background: transparent;
+    border-radius: 6px; color: {_th.th_tab_text} !important; background: transparent;
 }}
 .stTabs [aria-selected="true"] {{
-    background: {_th.th_accent} !important; color: #ffffff !important;
+    background: {_th.th_tab_act_bg} !important;
+    color: {_th.th_tab_act_txt} !important;
 }}
 
 /* ── Info box résultat ── */
 .info-box {{
-    background: {_th.th_accent}; border-radius: 10px;
+    background: {_th.th_ib_bg}; border-radius: 10px;
     padding: 14px 18px; margin: 8px 0;
-    color: #ffffff !important; font-size: {_th.th_font_size + 2}px; font-weight: 700;
+    color: {_th.th_ib_text} !important;
+    font-size: {_th.th_ib_fs}px; font-weight: 700;
 }}
 
-/* ── Carte réactif ── */
+/* ── Cartes réactifs ── */
 .rcard {{
-    background: {_th.th_card}; border-radius: 10px;
-    border-left: 5px solid #64748b;
+    background: {_th.th_card_bg}; border-radius: 10px;
+    border-left: 5px solid {_th.th_bord_aut};
     padding: 10px 14px; margin-bottom: 6px;
 }}
-.rcard.lim  {{ border-left-color: #2563eb; }}
-.rcard.reac {{ border-left-color: #16a34a; }}
-.rcard.solv {{ border-left-color: #d97706; }}
-.rcard.cat  {{ border-left-color: #9333ea; }}
+.rcard.lim  {{ border-left-color: {_th.th_bord_lim}; }}
+.rcard.reac {{ border-left-color: {_th.th_bord_reac}; }}
+.rcard.solv {{ border-left-color: {_th.th_bord_solv}; }}
+.rcard.cat  {{ border-left-color: {_th.th_bord_cat}; }}
+.rcard .rname {{
+    font-size: {_th.th_card_name_fs}px; font-weight: 700;
+    color: {_th.th_text} !important;
+}}
+.rcard .rinfo {{
+    font-size: {_th.th_card_info_fs}px; color: {_th.th_text} !important; margin-top: 2px;
+}}
 
-.rcard .rname {{ font-size: {_th.th_font_size + 1}px; font-weight: 700; color: {_th.th_text} !important; }}
-.rcard .rinfo {{ font-size: {_th.th_font_size - 1}px; color: {_th.th_text} !important; margin-top: 2px; }}
-
-/* ── Badge rôle ── */
+/* ── Badges rôle ── */
 .role-badge {{
     display: inline-block; border-radius: 6px; padding: 1px 8px;
-    font-size: 11px; font-weight: 700; margin-left: 8px;
-    color: #ffffff !important;
+    font-size: 11px; font-weight: 700; margin-left: 8px; color: #ffffff !important;
 }}
-.badge-lim  {{ background: #2563eb; }}
-.badge-reac {{ background: #16a34a; }}
-.badge-solv {{ background: #d97706; }}
-.badge-cat  {{ background: #9333ea; }}
-.badge-aut  {{ background: #64748b; }}
+.badge-lim  {{ background: {_th.th_badge_lim}; }}
+.badge-reac {{ background: {_th.th_badge_reac}; }}
+.badge-solv {{ background: {_th.th_badge_solv}; }}
+.badge-cat  {{ background: {_th.th_badge_cat}; }}
+.badge-aut  {{ background: {_th.th_badge_aut}; }}
 
 /* ── Inputs ── */
 input, textarea {{ color: {_th.th_text} !important; font-size: {_th.th_font_size}px !important; }}
 
 /* ── Boutons ── */
 .stButton > button {{
+    background: {_th.th_btn_bg} !important;
+    color: {_th.th_btn_text} !important;
     font-weight: 700; border-radius: 8px;
-    font-size: {_th.th_font_size}px; padding: 8px 14px;
+    font-size: {_th.th_btn_fs}px; padding: 8px 14px;
+    border: none !important;
 }}
 
-/* ── Tableau résultats ── */
-.dataframe td, .dataframe th {{ color: {_th.th_text} !important; font-size: {_th.th_font_size - 1}px; }}
+/* ── Tableau ── */
+.dataframe td, .dataframe th {{
+    color: {_th.th_text} !important; font-size: {_th.th_font_size - 1}px;
+}}
 </style>
 """, unsafe_allow_html=True)
 
 # ---------- Header ----------
 h1, h2 = st.columns([3, 2])
 with h1:
-    st.markdown("## ⚗️ Calculateur de Stœchiométrie")
+    st.markdown(f"## {st.session_state.lbl_titre}")
 with h2:
     rxn = st.text_input("Réaction", value=st.session_state.rxn_name,
                          label_visibility="collapsed", placeholder="Nom de la réaction…",
@@ -682,8 +735,9 @@ if n_lim:
 st.divider()
 
 # ── TABS ──────────────────────────────────────────────────────────────────────
+_s = st.session_state
 tab_r, tab_t, tab_ia, tab_ex, tab_cfg = st.tabs(
-    ["🧪 Réactifs", "📊 Tableau", "🤖 IA", "📤 Export", "⚙️ Paramètres"]
+    [_s.lbl_tab_r, _s.lbl_tab_t, _s.lbl_tab_ia, _s.lbl_tab_ex, _s.lbl_tab_cfg]
 )
 
 # ===========================================================================
@@ -709,12 +763,12 @@ with tab_r:
                 st.session_state._pc_prefill = pc_res
 
     # ── Formulaire ajout ─────────────────────────────────────────────────────
-    st.subheader("Ajouter un réactif")
+    st.subheader(st.session_state.lbl_add)
     inv = load_inventaire()
     if inv:
         noms_inv = [p["nom"] for p in inv]
         noms_uniq = list(dict.fromkeys(noms_inv))
-        sel_inv = st.selectbox("📦 Depuis mon inventaire", noms_uniq,
+        sel_inv = st.selectbox(st.session_state.lbl_inv, noms_uniq,
                                index=None, placeholder="Taper pour rechercher…", key="_inv_sel")
         if sel_inv:
             match = next((p for p in inv if p["nom"] == sel_inv), None)
@@ -788,7 +842,7 @@ with tab_r:
 
     # ── Liste des réactifs ───────────────────────────────────────────────────
     if st.session_state.reagents:
-        st.subheader("Réactifs ajoutés")
+        st.subheader(st.session_state.lbl_list)
 
         ROLE_CSS = {
             "Limitant":   ("lim",  "badge-lim"),
@@ -857,7 +911,7 @@ with tab_r:
 
     # ── Conditions & Produit ─────────────────────────────────────────────────
     if st.session_state.reagents:
-        st.subheader("Conditions réactionnelles")
+        st.subheader(st.session_state.lbl_cond)
         cc1, cc2, cc3 = st.columns(3)
         cond = st.session_state.conditions
         with cc1:
@@ -872,7 +926,7 @@ with tab_r:
             d = st.text_input("t (h)", value=cond["time"], placeholder="ex : 2", key="_cond_time")
             st.session_state.conditions["time"] = d
 
-        st.subheader("Produit")
+        st.subheader(st.session_state.lbl_produit)
         prod = st.session_state.prod
         pp1, pp2, pp3, pp4 = st.columns(4)
         with pp1:
@@ -900,8 +954,9 @@ with tab_r:
 # TAB 2 — Tableau
 # ===========================================================================
 with tab_t:
+    st.subheader(st.session_state.lbl_resultats)
     if not st.session_state.reagents:
-        st.info("Ajoutez des réactifs dans l'onglet **Réactifs** pour voir le tableau.")
+        st.info("Ajoutez des réactifs dans l'onglet Réactifs pour voir le tableau.")
     else:
         n_lim2, results2, prod_result2 = recalc(st.session_state.reagents, st.session_state.prod)
         prod_name = st.session_state.prod["name"] or "Produit"
@@ -1089,51 +1144,129 @@ with tab_ex:
 # ===========================================================================
 # TAB 5 — Paramètres
 # ===========================================================================
-with tab_cfg:
-
-    # ── Apparence ────────────────────────────────────────────────────────────
-    st.subheader("🎨 Apparence")
-    st.markdown("Les changements s'appliquent immédiatement après chaque modification.")
-
-    ta1, ta2 = st.columns(2)
-    with ta1:
-        bg = st.color_picker("Fond de la page", value=st.session_state.th_bg, key="_th_bg")
-        if bg != st.session_state.th_bg:
-            st.session_state.th_bg = bg
-            st.rerun()
-
-        card = st.color_picker("Fond des cartes réactifs", value=st.session_state.th_card, key="_th_card")
-        if card != st.session_state.th_card:
-            st.session_state.th_card = card
-            st.rerun()
-
-    with ta2:
-        txt = st.color_picker("Couleur du texte", value=st.session_state.th_text, key="_th_text")
-        if txt != st.session_state.th_text:
-            st.session_state.th_text = txt
-            st.rerun()
-
-        acc = st.color_picker("Couleur accent (onglet actif, info box)", value=st.session_state.th_accent, key="_th_accent")
-        if acc != st.session_state.th_accent:
-            st.session_state.th_accent = acc
-            st.rerun()
-
-    fs = st.slider("Taille de police (px)", min_value=10, max_value=22,
-                   value=st.session_state.th_font_size, step=1, key="_th_fs")
-    if fs != st.session_state.th_font_size:
-        st.session_state.th_font_size = fs
+def _cp(label, key):
+    """Color picker qui applique immédiatement."""
+    v = st.color_picker(label, value=st.session_state[key], key=f"_cp_{key}")
+    if v != st.session_state[key]:
+        st.session_state[key] = v
         st.rerun()
 
-    if st.button("↩️ Réinitialiser l'apparence"):
-        st.session_state.th_bg        = "#f1f5f9"
-        st.session_state.th_card      = "#ffffff"
-        st.session_state.th_text      = "#0f172a"
-        st.session_state.th_accent    = "#1e40af"
-        st.session_state.th_font_size = 14
+def _sl(label, key, lo, hi):
+    """Slider entier qui applique immédiatement."""
+    v = st.slider(label, min_value=lo, max_value=hi,
+                  value=st.session_state[key], step=1, key=f"_sl_{key}")
+    if v != st.session_state[key]:
+        st.session_state[key] = v
+        st.rerun()
+
+def _ti(label, key):
+    """Text input pour renommer un titre."""
+    v = st.text_input(label, value=st.session_state[key], key=f"_ti_{key}")
+    if v != st.session_state[key]:
+        st.session_state[key] = v
+        st.rerun()
+
+with tab_cfg:
+
+    # ── 1. Général ────────────────────────────────────────────────────────────
+    with st.expander("🌐 Général", expanded=True):
+        g1, g2 = st.columns(2)
+        with g1:
+            _cp("Fond de la page", "th_bg")
+            _cp("Couleur du texte", "th_text")
+        with g2:
+            _sl("Taille de police globale (px)", "th_font_size", 10, 24)
+
+    # ── 2. Info box (résultat n limitant) ─────────────────────────────────────
+    with st.expander("📦 Boîte résultat (haut de page)"):
+        ib1, ib2 = st.columns(2)
+        with ib1:
+            _cp("Fond", "th_ib_bg")
+            _cp("Texte", "th_ib_text")
+        with ib2:
+            _sl("Taille police (px)", "th_ib_fs", 10, 24)
+
+    # ── 3. Onglets ────────────────────────────────────────────────────────────
+    with st.expander("📑 Onglets"):
+        o1, o2 = st.columns(2)
+        with o1:
+            _cp("Fond de la barre d'onglets", "th_tab_bar")
+            _cp("Texte des onglets inactifs", "th_tab_text")
+        with o2:
+            _cp("Fond de l'onglet actif", "th_tab_act_bg")
+            _cp("Texte de l'onglet actif", "th_tab_act_txt")
+
+    # ── 4. Cartes réactifs ────────────────────────────────────────────────────
+    with st.expander("🧪 Cartes réactifs"):
+        cr1, cr2 = st.columns(2)
+        with cr1:
+            _cp("Fond de la carte", "th_card_bg")
+            _sl("Police nom du composé (px)", "th_card_name_fs", 10, 24)
+            _sl("Police infos MW/masse (px)", "th_card_info_fs", 9, 20)
+        with cr2:
+            st.markdown("**Bordures par rôle**")
+            _cp("Limitant", "th_bord_lim")
+            _cp("Réactif", "th_bord_reac")
+            _cp("Solvant", "th_bord_solv")
+            _cp("Catalyseur", "th_bord_cat")
+            _cp("Autre", "th_bord_aut")
+
+    # ── 5. Badges rôle ────────────────────────────────────────────────────────
+    with st.expander("🏷️ Badges de rôle"):
+        bd1, bd2 = st.columns(2)
+        with bd1:
+            _cp("Limitant", "th_badge_lim")
+            _cp("Réactif", "th_badge_reac")
+            _cp("Solvant", "th_badge_solv")
+        with bd2:
+            _cp("Catalyseur", "th_badge_cat")
+            _cp("Autre", "th_badge_aut")
+
+    # ── 6. Boutons ────────────────────────────────────────────────────────────
+    with st.expander("🔘 Boutons"):
+        bt1, bt2 = st.columns(2)
+        with bt1:
+            _cp("Fond des boutons", "th_btn_bg")
+            _cp("Texte des boutons", "th_btn_text")
+        with bt2:
+            _sl("Taille police boutons (px)", "th_btn_fs", 10, 22)
+
+    # ── 7. Renommer les titres ─────────────────────────────────────────────────
+    with st.expander("✏️ Titres & étiquettes"):
+        lb1, lb2 = st.columns(2)
+        with lb1:
+            _ti("Titre principal de l'app", "lbl_titre")
+            _ti("Onglet Réactifs", "lbl_tab_r")
+            _ti("Onglet Tableau", "lbl_tab_t")
+            _ti("Onglet IA", "lbl_tab_ia")
+            _ti("Onglet Export", "lbl_tab_ex")
+            _ti("Onglet Paramètres", "lbl_tab_cfg")
+            _ti("Inventaire (label selectbox)", "lbl_inv")
+        with lb2:
+            _ti("Titre 'Ajouter un réactif'", "lbl_add")
+            _ti("Titre 'Réactifs ajoutés'", "lbl_list")
+            _ti("Titre 'Conditions'", "lbl_cond")
+            _ti("Titre 'Produit'", "lbl_produit")
+            _ti("Titre 'Résultats'", "lbl_resultats")
+            _ti("Titre section IA", "lbl_ia")
+            _ti("Titre section Export", "lbl_export")
+
+    # ── 8. Reset total ────────────────────────────────────────────────────────
+    st.divider()
+    if st.button("↩️ Tout réinitialiser (apparence + titres)"):
+        for k in ["th_bg","th_text","th_font_size","th_ib_bg","th_ib_text","th_ib_fs",
+                  "th_tab_bar","th_tab_text","th_tab_act_bg","th_tab_act_txt",
+                  "th_card_bg","th_card_name_fs","th_card_info_fs",
+                  "th_bord_lim","th_bord_reac","th_bord_solv","th_bord_cat","th_bord_aut",
+                  "th_badge_lim","th_badge_reac","th_badge_solv","th_badge_cat","th_badge_aut",
+                  "th_btn_bg","th_btn_text","th_btn_fs",
+                  "lbl_titre","lbl_tab_r","lbl_tab_t","lbl_tab_ia","lbl_tab_ex","lbl_tab_cfg",
+                  "lbl_add","lbl_inv","lbl_list","lbl_cond","lbl_produit",
+                  "lbl_resultats","lbl_ia","lbl_export"]:
+            del st.session_state[k]
         st.rerun()
 
     st.divider()
-
     # ── IA ────────────────────────────────────────────────────────────────────
     st.subheader("🤖 Statut IA")
     provider_actif = charger_provider()
@@ -1142,6 +1275,4 @@ with tab_cfg:
         st.success(f"✅ Fournisseur actif : **{provider_actif}** — clé configurée")
     else:
         st.error("❌ Aucune clé API trouvée dans `.streamlit/secrets.toml`")
-
-    st.divider()
-    st.markdown("**À propos** — Calculateur de Stœchiométrie H&B · Streamlit + Gemini / Groq + PubChem")
+    st.markdown("**À propos** — Stœchiométrie H&B · Streamlit + Gemini / Groq + PubChem")
