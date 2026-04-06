@@ -562,17 +562,48 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-[data-testid="stAppViewContainer"] { background: #ffffff; }
-.stTabs [data-baseweb="tab"] { padding: 8px 18px; font-weight: 600; border-radius: 6px 6px 0 0; }
-.stTabs [aria-selected="true"] { background: #dbeafe !important; color: #2563eb !important; }
+/* ── Fond général ── */
+[data-testid="stAppViewContainer"] { background: #f0f4f8; }
+[data-testid="stMain"] { padding: 1rem 0.75rem 2rem; }
+
+/* ── Onglets ── */
+.stTabs [data-baseweb="tab"] {
+    padding: 8px 18px; font-weight: 600;
+    border-radius: 6px 6px 0 0;
+    background: #e2e8f0; color: #334155;
+}
+.stTabs [aria-selected="true"] {
+    background: #2563eb !important; color: #ffffff !important;
+}
+
+/* ── Info box résultat ── */
 .info-box {
-    background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px;
-    padding:10px 16px; margin:6px 0; color:#1e40af; font-size:14px;
+    background: #1e40af; border-radius: 10px;
+    padding: 12px 18px; margin: 6px 0;
+    color: #ffffff; font-size: 15px; font-weight: 600;
 }
+
+/* ── Badge rôle ── */
 .role-badge {
-    display:inline-block; border-radius:12px; padding:2px 10px;
-    font-size:12px; font-weight:700; margin-left:6px;
+    display: inline-block; border-radius: 12px; padding: 2px 10px;
+    font-size: 12px; font-weight: 700; margin-left: 6px;
+    color: #1e293b;
 }
+
+/* ── Carte réactif ── */
+.reagent-card {
+    background: #ffffff; border: 1px solid #cbd5e1;
+    border-radius: 10px; padding: 10px 14px; margin-bottom: 8px;
+}
+
+/* ── Inputs plus lisibles sur mobile ── */
+@media (max-width: 768px) {
+    input, select, textarea { font-size: 16px !important; }
+    .stButton > button { font-size: 15px; padding: 10px; border-radius: 8px; }
+}
+
+/* ── Titres ── */
+h2, h3 { color: #1e293b !important; }
 </style>
 """, unsafe_allow_html=True)
 
