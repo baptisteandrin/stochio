@@ -562,6 +562,11 @@ st.set_page_config(
 
 # ---------- Persistance des paramètres de thème ----------
 _CONFIG_FILE = Path(__file__).parent / ".stochio_config.json"
+_FONT_PREFIXES = [
+    "th","th_tab","th_ib","th_inp","th_btn",
+    "th_form_lbl","th_card_name","th_card_info",
+    "th_badge","th_exp_title","th_table",
+]
 _TH_KEYS_PERSIST = [
     "th_bg","th_text","th_font_size",
     "th_ib_bg","th_ib_text","th_ib_fs",
@@ -578,7 +583,7 @@ _TH_KEYS_PERSIST = [
     "lbl_titre","lbl_tab_r","lbl_tab_t","lbl_tab_ia","lbl_tab_ex","lbl_tab_cfg",
     "lbl_add","lbl_inv","lbl_list","lbl_cond","lbl_produit",
     "lbl_resultats","lbl_ia","lbl_export",
-]
+] + [f"{p}_{s}" for p in _FONT_PREFIXES for s in ("family","bold","italic")]
 
 def _save_config():
     data = {k: st.session_state[k] for k in _TH_KEYS_PERSIST if k in st.session_state}
@@ -675,6 +680,18 @@ def _init():
         "lbl_resultats":  "📊 Résultats",
         "lbl_ia":         "Procédure IA",
         "lbl_export":     "Exporter",
+        # ── Police par section (family, bold, italic) ──
+        "th_family":            "Par défaut", "th_bold": False,       "th_italic": False,
+        "th_tab_family":        "Par défaut", "th_tab_bold": True,    "th_tab_italic": False,
+        "th_ib_family":         "Par défaut", "th_ib_bold": True,     "th_ib_italic": False,
+        "th_inp_family":        "Par défaut", "th_inp_bold": False,   "th_inp_italic": False,
+        "th_btn_family":        "Par défaut", "th_btn_bold": True,    "th_btn_italic": False,
+        "th_form_lbl_family":   "Par défaut", "th_form_lbl_bold": True,  "th_form_lbl_italic": False,
+        "th_card_name_family":  "Par défaut", "th_card_name_bold": True, "th_card_name_italic": False,
+        "th_card_info_family":  "Par défaut", "th_card_info_bold": False,"th_card_info_italic": False,
+        "th_badge_family":      "Par défaut", "th_badge_bold": True,  "th_badge_italic": False,
+        "th_exp_title_family":  "Par défaut", "th_exp_title_bold": True, "th_exp_title_italic": False,
+        "th_table_family":      "Par défaut", "th_table_bold": False, "th_table_italic": False,
     }
     saved = _load_config()
     for k, v in defaults.items():
@@ -682,6 +699,25 @@ def _init():
             st.session_state[k] = saved.get(k, v)
 
 _init()
+
+# ---------- Helpers police ----------
+_FONT_FAMILIES = [
+    "Par défaut","Arial","Helvetica","Georgia","Times New Roman",
+    "Courier New","Verdana","Trebuchet MS","Impact","monospace",
+]
+
+def _fcss(prefix, default_bold=False):
+    """Retourne les propriétés CSS font-* pour un préfixe donné."""
+    s = st.session_state
+    fam   = s.get(f"{prefix}_family", "Par défaut")
+    bold  = s.get(f"{prefix}_bold",   default_bold)
+    italic= s.get(f"{prefix}_italic", False)
+    parts = []
+    if fam != "Par défaut":
+        parts.append(f"font-family:{fam} !important")
+    parts.append(f"font-weight:{'bold' if bold else 'normal'} !important")
+    parts.append(f"font-style:{'italic' if italic else 'normal'} !important")
+    return "; ".join(parts)
 
 # ---------- CSS dynamique ----------
 _th = st.session_state
@@ -695,16 +731,18 @@ p, span, div, label, small, .stMarkdown, .stText,
 [data-testid="stCaptionContainer"] {{
     color: {_th.th_text} !important;
     font-size: {_th.th_font_size}px;
+    {_fcss("th")};
 }}
-h1, h2, h3, h4 {{ color: {_th.th_text} !important; font-weight: 700 !important; }}
+h1, h2, h3, h4 {{ color: {_th.th_text} !important; {_fcss("th", True)}; }}
 
 /* ── Onglets ── */
 .stTabs [data-baseweb="tab-list"] {{
     background: {_th.th_tab_bar}; border-radius: 8px; padding: 4px;
 }}
 .stTabs [data-baseweb="tab"] {{
-    padding: 8px 16px; font-weight: 700; font-size: {_th.th_font_size}px;
+    padding: 8px 16px; font-size: {_th.th_font_size}px;
     border-radius: 6px; color: {_th.th_tab_text} !important; background: transparent;
+    {_fcss("th_tab", True)};
 }}
 .stTabs [aria-selected="true"] {{
     background: {_th.th_tab_act_bg} !important;
@@ -716,7 +754,7 @@ h1, h2, h3, h4 {{ color: {_th.th_text} !important; font-weight: 700 !important; 
     background: {_th.th_ib_bg}; border-radius: 10px;
     padding: 14px 18px; margin: 8px 0;
     color: {_th.th_ib_text} !important;
-    font-size: {_th.th_ib_fs}px; font-weight: 700;
+    font-size: {_th.th_ib_fs}px; {_fcss("th_ib", True)};
 }}
 
 /* ── Cartes réactifs ── */
@@ -730,17 +768,19 @@ h1, h2, h3, h4 {{ color: {_th.th_text} !important; font-weight: 700 !important; 
 .rcard.solv {{ border-left-color: {_th.th_bord_solv}; }}
 .rcard.cat  {{ border-left-color: {_th.th_bord_cat}; }}
 .rcard .rname {{
-    font-size: {_th.th_card_name_fs}px; font-weight: 700;
-    color: {_th.th_text} !important;
+    font-size: {_th.th_card_name_fs}px; color: {_th.th_text} !important;
+    {_fcss("th_card_name", True)};
 }}
 .rcard .rinfo {{
-    font-size: {_th.th_card_info_fs}px; color: {_th.th_text} !important; margin-top: 2px;
+    font-size: {_th.th_card_info_fs}px; color: {_th.th_text} !important;
+    margin-top: 2px; {_fcss("th_card_info")};
 }}
 
 /* ── Badges rôle ── */
 .role-badge {{
     display: inline-block; border-radius: 6px; padding: 1px 8px;
-    font-size: 11px; font-weight: 700; margin-left: 8px; color: #ffffff !important;
+    font-size: 11px; margin-left: 8px; color: #ffffff !important;
+    {_fcss("th_badge", True)};
 }}
 .badge-lim  {{ background: {_th.th_badge_lim}; }}
 .badge-reac {{ background: {_th.th_badge_reac}; }}
@@ -754,6 +794,7 @@ input, textarea {{
     color: {_th.th_inp_text} !important;
     font-size: {_th.th_inp_fs}px !important;
     border-color: {_th.th_inp_border} !important;
+    {_fcss("th_inp")};
 }}
 [data-baseweb="input"], [data-baseweb="textarea"] {{
     background: {_th.th_inp_bg} !important;
@@ -764,9 +805,9 @@ input, textarea {{
 .stButton > button {{
     background: {_th.th_btn_bg} !important;
     color: {_th.th_btn_text} !important;
-    font-weight: 700; border-radius: 8px;
-    font-size: {_th.th_btn_fs}px; padding: 8px 14px;
-    border: none !important;
+    border-radius: 8px; font-size: {_th.th_btn_fs}px;
+    padding: 8px 14px; border: none !important;
+    {_fcss("th_btn", True)};
 }}
 
 /* ── Formulaire ajout réactif ── */
@@ -779,7 +820,7 @@ input, textarea {{
 [data-testid="stForm"] [data-testid="stWidgetLabel"] > div {{
     color: {_th.th_form_lbl} !important;
     font-size: {_th.th_form_lbl_fs}px !important;
-    font-weight: 600;
+    {_fcss("th_form_lbl", True)};
 }}
 
 /* ── Selectbox / menus déroulants ── */
@@ -809,12 +850,13 @@ input, textarea {{
 [data-testid="stExpander"] summary,
 [data-testid="stExpander"] summary p {{
     color: {_th.th_exp_title} !important;
-    font-weight: 700;
+    {_fcss("th_exp_title", True)};
 }}
 
 /* ── Tableau ── */
-.dataframe td, .dataframe th {{
+.dataframe td, .dataframe th, table td, table th {{
     color: {_th.th_text} !important; font-size: {_th.th_font_size - 1}px;
+    {_fcss("th_table")};
 }}
 
 /* ── Dropdown mobile : scroll tactile ── */
@@ -1259,6 +1301,24 @@ with tab_ex:
 # ===========================================================================
 # TAB 5 — Paramètres
 # ===========================================================================
+def _fo(prefix, default_bold=False):
+    """Contrôles police/gras/italique pour un préfixe."""
+    fc1, fc2, fc3 = st.columns([3, 1, 1])
+    with fc1:
+        cur = st.session_state.get(f"{prefix}_family", "Par défaut")
+        idx = _FONT_FAMILIES.index(cur) if cur in _FONT_FAMILIES else 0
+        v = st.selectbox("Police", _FONT_FAMILIES, index=idx, key=f"_fo_fam_{prefix}")
+        if v != st.session_state.get(f"{prefix}_family", "Par défaut"):
+            st.session_state[f"{prefix}_family"] = v; _save_config(); st.rerun()
+    with fc2:
+        v = st.checkbox("Gras", value=st.session_state.get(f"{prefix}_bold", default_bold), key=f"_fo_bold_{prefix}")
+        if v != st.session_state.get(f"{prefix}_bold", default_bold):
+            st.session_state[f"{prefix}_bold"] = v; _save_config(); st.rerun()
+    with fc3:
+        v = st.checkbox("Italique", value=st.session_state.get(f"{prefix}_italic", False), key=f"_fo_ital_{prefix}")
+        if v != st.session_state.get(f"{prefix}_italic", False):
+            st.session_state[f"{prefix}_italic"] = v; _save_config(); st.rerun()
+
 def _cp(label, key):
     v = st.color_picker(label, value=st.session_state[key], key=f"_cp_{key}")
     if v != st.session_state[key]:
@@ -1307,6 +1367,7 @@ def _cfg_general():
             _cp("Couleur du texte global", "th_text")
         with g2:
             _sl("Taille police globale (px)", "th_font_size", 10, 24)
+        _fo("th")
 
     with st.expander("📑 Barre d'onglets"):
         o1, o2 = st.columns(2)
@@ -1316,6 +1377,7 @@ def _cfg_general():
         with o2:
             _cp("Fond onglet actif", "th_tab_act_bg")
             _cp("Texte onglet actif", "th_tab_act_txt")
+        _fo("th_tab", True)
 
     with st.expander("📦 Boîte résultat (n limitant, haut de page)"):
         r1, r2 = st.columns(2)
@@ -1324,6 +1386,7 @@ def _cfg_general():
             _cp("Texte", "th_ib_text")
         with r2:
             _sl("Taille police (px)", "th_ib_fs", 10, 24)
+        _fo("th_ib", True)
 
     with st.expander("✏️ Champs de saisie (text inputs)"):
         i1, i2 = st.columns(2)
@@ -1333,6 +1396,7 @@ def _cfg_general():
         with i2:
             _cp("Bordure des champs", "th_inp_border")
             _sl("Taille police (px)", "th_inp_fs", 10, 22)
+        _fo("th_inp")
 
     with st.expander("🔘 Boutons"):
         b1, b2 = st.columns(2)
@@ -1341,6 +1405,7 @@ def _cfg_general():
             _cp("Texte des boutons", "th_btn_text")
         with b2:
             _sl("Taille police (px)", "th_btn_fs", 10, 22)
+        _fo("th_btn", True)
 
     with st.expander("🏷️ Noms des onglets & titre app"):
         n1, n2 = st.columns(2)
@@ -1361,6 +1426,7 @@ def _cfg_reactifs():
             _cp("Bordure", "th_exp_border")
         with e2:
             _cp("Couleur du titre", "th_exp_title")
+        _fo("th_exp_title", True)
         st.caption("Ces réglages s'appliquent à toutes les sections dépliables.")
 
     with st.expander("📦 Depuis mon inventaire (boîte déroulante)"):
@@ -1380,14 +1446,19 @@ def _cfg_reactifs():
         with f2:
             _cp("Couleur des labels", "th_form_lbl")
             _sl("Taille police labels (px)", "th_form_lbl_fs", 9, 20)
+        _fo("th_form_lbl", True)
         _ti("Titre de la section", "lbl_add")
 
     with st.expander("🃏 Liste des réactifs (cartes)"):
         c1, c2 = st.columns(2)
         with c1:
             _cp("Fond de la carte", "th_card_bg")
-            _sl("Police nom composé (px)", "th_card_name_fs", 10, 24)
-            _sl("Police infos MW/masse (px)", "th_card_info_fs", 9, 20)
+            st.markdown("**Nom du composé**")
+            _sl("Taille (px)", "th_card_name_fs", 10, 24)
+            _fo("th_card_name", True)
+            st.markdown("**Infos (MW / masse)**")
+            _sl("Taille (px)", "th_card_info_fs", 9, 20)
+            _fo("th_card_info")
         with c2:
             st.markdown("**Bordure gauche par rôle**")
             _cp("Limitant", "th_bord_lim")
@@ -1404,6 +1475,7 @@ def _cfg_reactifs():
         with bd2:
             _cp("Catalyseur", "th_badge_cat")
             _cp("Autre", "th_badge_aut")
+        _fo("th_badge", True)
         _ti("Titre de la section", "lbl_list")
 
     with st.expander("⚗️ Paramètres de synthèse (conditions & produit)"):
@@ -1418,6 +1490,7 @@ def _cfg_reactifs():
 def _cfg_tableau():
     with st.expander("📊 Tableau des résultats"):
         _ti("Titre de la section", "lbl_resultats")
+        _fo("th_table")
         st.caption("Les couleurs du tableau suivent les réglages globaux (texte, fond).")
 
     with st.expander("📤 Export CSV / PDF"):
