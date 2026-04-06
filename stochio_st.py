@@ -633,16 +633,16 @@ h1, h2, h3, h4 {{ color: {_th.th_text} !important; font-weight: 700 !important; 
 .rcard .rinfo {{ font-size: {_th.th_font_size - 1}px; color: {_th.th_text} !important; margin-top: 2px; }}
 
 /* ── Badge rôle ── */
-.role-badge {
+.role-badge {{
     display: inline-block; border-radius: 6px; padding: 1px 8px;
     font-size: 11px; font-weight: 700; margin-left: 8px;
     color: #ffffff !important;
-}
-.badge-lim  { background: #2563eb; }
-.badge-reac { background: #16a34a; }
-.badge-solv { background: #d97706; }
-.badge-cat  { background: #9333ea; }
-.badge-aut  { background: #64748b; }
+}}
+.badge-lim  {{ background: #2563eb; }}
+.badge-reac {{ background: #16a34a; }}
+.badge-solv {{ background: #d97706; }}
+.badge-cat  {{ background: #9333ea; }}
+.badge-aut  {{ background: #64748b; }}
 
 /* ── Inputs ── */
 input, textarea {{ color: {_th.th_text} !important; font-size: {_th.th_font_size}px !important; }}
