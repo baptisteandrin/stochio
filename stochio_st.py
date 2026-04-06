@@ -726,6 +726,11 @@ st.markdown(f"""
 /* ── Fond & texte global ── */
 [data-testid="stAppViewContainer"] {{ background: {_th.th_bg}; }}
 [data-testid="stMain"] {{ padding: 1rem 0.75rem 2rem; }}
+
+/* ── Dropdown toujours vers le bas : assez d'espace en bas de page ── */
+@media (max-width: 900px) {{
+    [data-testid="stMain"] {{ padding-bottom: 45vh !important; }}
+}}
 p, span, div, label, small, .stMarkdown, .stText,
 [data-testid="stWidgetLabel"] > div,
 [data-testid="stCaptionContainer"] {{
