@@ -743,8 +743,17 @@ p, .stMarkdown p, .stText,
 label {{ color: {_th.th_text} !important; font-size: {_th.th_font_size}px; }}
 h1, h2, h3, h4 {{ color: {_th.th_text} !important; {_fcss("th", True)}; }}
 
-/* Protéger les icônes Streamlit */
-svg, [data-testid*="Icon"], button svg, summary svg {{ font-family: inherit; }}
+/* Protéger les icônes Streamlit (Material Icons) */
+.material-icons,
+[data-testid="stExpander"] summary span,
+[data-baseweb="icon"],
+button > span,
+[class*="material"] {{
+    font-family: "Material Icons" !important;
+    font-size: 20px !important;
+    font-weight: normal !important;
+    font-style: normal !important;
+}}
 
 /* ── Onglets ── */
 .stTabs [data-baseweb="tab-list"] {{
