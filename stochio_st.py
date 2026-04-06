@@ -771,17 +771,8 @@ if n_lim2 and results2:
     # Transposé : réactifs en lignes, propriétés en colonnes
     df_t = df_res.T
 
-    def _style_res(df):
-        styles = pd.DataFrame("", index=df.index, columns=df.columns)
-        for row in df.index:
-            if row == prod_name:
-                styles.loc[row] = "background-color:#dcfce7; color:#15803d; font-weight:bold"
-            else:
-                styles.loc[row] = "background-color:#f8fafc; color:#1e293b"
-        return styles
-
     st.subheader("📊 Résultats")
-    st.dataframe(df_t.style.apply(_style_res, axis=None), use_container_width=True)
+    st.dataframe(df_t, use_container_width=True)
 
     cond  = st.session_state.conditions
     parts = []
