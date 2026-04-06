@@ -1050,17 +1050,8 @@ with tab_t:
         prod_name = st.session_state.prod["name"] or "Produit"
         df = build_display_df(st.session_state.reagents, results2, prod_result2, prod_name)
 
-        # Style : colonne produit en vert, autres en bleu très clair
-        def _style(df):
-            styles = pd.DataFrame("", index=df.index, columns=df.columns)
-            for col in df.columns:
-                if col == prod_name:
-                    styles[col] = "background-color:#f0fdf4; color:#15803d; font-weight:bold"
-                else:
-                    styles[col] = "background-color:#f8fafc"
-            return styles
-
-        st.dataframe(df.style.apply(_style, axis=None), width="stretch")
+        # Tableau statique (st.table = pas de tap requis sur mobile)
+        st.table(df)
 
         # Conditions
         cond = st.session_state.conditions
