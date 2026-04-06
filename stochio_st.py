@@ -551,7 +551,7 @@ def extract_ai_info(txt):
     return info
 
 # =============================================================================
-# Streamlit UI  — redesign mobile-first
+# Streamlit UI
 # =============================================================================
 st.set_page_config(
     page_title="Stœchiométrie H&B",
@@ -562,39 +562,17 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-/* ── Base ── */
-[data-testid="stAppViewContainer"] { background: #f8fafc; }
-[data-testid="stMain"] { padding: 1rem 1rem 2rem; }
-
-/* ── Info box ── */
+[data-testid="stAppViewContainer"] { background: #ffffff; }
+.stTabs [data-baseweb="tab"] { padding: 8px 18px; font-weight: 600; border-radius: 6px 6px 0 0; }
+.stTabs [aria-selected="true"] { background: #dbeafe !important; color: #2563eb !important; }
 .info-box {
-    background: linear-gradient(135deg,#1e40af,#2563eb);
-    border-radius: 12px; padding: 12px 18px; margin: 8px 0;
-    color: #fff; font-size: 15px; font-weight: 500;
+    background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px;
+    padding:10px 16px; margin:6px 0; color:#1e40af; font-size:14px;
 }
-
-/* ── Section card ── */
-.section-card {
-    background: #fff; border-radius: 14px; border: 1px solid #e2e8f0;
-    padding: 16px; margin-bottom: 14px;
+.role-badge {
+    display:inline-block; border-radius:12px; padding:2px 10px;
+    font-size:12px; font-weight:700; margin-left:6px;
 }
-
-/* ── Résultats table ── */
-.result-table { font-size: 13px; }
-
-/* ── Boutons mobiles ── */
-@media (max-width: 768px) {
-    [data-testid="stHorizontalBlock"] { flex-wrap: wrap; gap: 6px; }
-    .stButton > button { font-size: 15px; padding: 10px 12px; border-radius: 10px; }
-    [data-testid="stDataEditor"] { font-size: 13px; }
-}
-
-/* ── Expanders ── */
-[data-testid="stExpander"] {
-    background: #fff; border-radius: 12px !important;
-    border: 1px solid #e2e8f0 !important; margin-bottom: 10px;
-}
-[data-testid="stExpander"] summary { font-weight: 700; font-size: 15px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -609,7 +587,7 @@ def _init():
         "rxn_name": "Synthèse",
         "procedure": "",
         "chat_history": [],
-        "editor_version": 0,
+        "_pc_prefill": None,
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -617,274 +595,348 @@ def _init():
 
 _init()
 
-# ---------- Helper : reagents ↔ DataFrame ----------
-def _reagents_to_df(reagents):
-    if not reagents:
-        return pd.DataFrame([{
-            "Nom": "", "Rôle": "Limitant", "MW (g/mol)": None,
-            "Masse (g)": None, "Éq": None, "Pureté (%)": 100.0, "Densité": None,
-        }])
-    rows = []
-    for r in reagents:
-        rows.append({
-            "Nom":        r["name"],
-            "Rôle":       r["role"],
-            "MW (g/mol)": float(r["mw"]) if r["mw"] else None,
-            "Masse (g)":  float(r["mass_g"]) if r["role"] == "Limitant" and r["mass_g"] else None,
-            "Éq":         float(r["eq"]) if r["role"] != "Limitant" and r["eq"] else None,
-            "Pureté (%)": float(r["purity"] or 100),
-            "Densité":    float(r["density"]) if r.get("density") else None,
-        })
-    return pd.DataFrame(rows)
-
-def _df_to_reagents(df):
-    reagents = []
-    for _, row in df.iterrows():
-        nom = str(row.get("Nom") or "").strip()
-        if not nom:
-            continue
-        role = str(row.get("Rôle") or "Réactif")
-        mw   = float(row["MW (g/mol)"]) if pd.notna(row.get("MW (g/mol)")) and row.get("MW (g/mol)") else 0.0
-        mass = float(row["Masse (g)"])  if pd.notna(row.get("Masse (g)"))  and row.get("Masse (g)")  else 0.0
-        eq   = float(row["Éq"])         if pd.notna(row.get("Éq"))         and row.get("Éq")         else 1.0
-        pur  = float(row["Pureté (%)"])  if pd.notna(row.get("Pureté (%)")) and row.get("Pureté (%)") else 100.0
-        dens = float(row["Densité"])    if pd.notna(row.get("Densité"))    and row.get("Densité")     else 0.0
-        reagents.append({
-            "name": nom, "role": role, "mw": mw,
-            "mass_g": mass if role == "Limitant" else 0.0,
-            "eq":     1.0  if role == "Limitant" else eq,
-            "purity": pur, "density": dens,
-        })
-    return reagents
-
-# ── Header ────────────────────────────────────────────────────────────────────
-h1, h2 = st.columns([2, 3])
+# ---------- Header ----------
+h1, h2 = st.columns([3, 2])
 with h1:
-    st.markdown("## ⚗️ Stœchiométrie")
+    st.markdown("## ⚗️ Calculateur de Stœchiométrie")
 with h2:
     rxn = st.text_input("Réaction", value=st.session_state.rxn_name,
                          label_visibility="collapsed", placeholder="Nom de la réaction…",
                          key="_rxn_name_widget")
     st.session_state.rxn_name = rxn
 
-# ── Recalcul ─────────────────────────────────────────────────────────────────
+# ---------- Recalcul global ----------
 n_lim, results, prod_result = recalc(st.session_state.reagents, st.session_state.prod)
+
 if n_lim:
     prod_mass_mg = prod_result.get("mass_g", 0) * 1000
     st.markdown(
-        f'<div class="info-box">⚖️ n(limitant) = <b>{n_lim*1000:.4f} mmol</b>'
-        f'&nbsp;&nbsp;·&nbsp;&nbsp;Produit théorique = <b>{prod_mass_mg:.2f} mg</b></div>',
-        unsafe_allow_html=True,
+        f'<div class="info-box">⚖️ n(limitant) = <b>{n_lim:.6f} mol</b> &nbsp;•&nbsp; '
+        f'Produit théorique = <b>{prod_mass_mg:.3f} mg</b></div>',
+        unsafe_allow_html=True
     )
 
 st.divider()
 
-# ===========================================================================
-# SECTION 1 — Tableau de saisie (data_editor)
-# ===========================================================================
-inv      = load_inventaire()
-inv_dict = {p["nom"].lower(): p for p in inv} if inv else {}
-
-col_title, col_reset = st.columns([4, 1])
-with col_title:
-    st.subheader("Réactifs")
-with col_reset:
-    if st.button("🗑️ Reset", help="Réinitialiser tout"):
-        st.session_state.reagents   = []
-        st.session_state.prod       = {"name":"","mw":0.0,"mw_manual":False,"yield":1.0,
-                                        "yield_manual":False,"mass":0.0,"mass_manual":False,"density":0.0}
-        st.session_state.conditions = {"solvant":"","temp":"","time":""}
-        st.session_state.procedure  = ""
-        st.session_state.chat_history = []
-        st.rerun()
-
-# Construire le df et auto-remplir MW depuis inventaire
-df_in = _reagents_to_df(st.session_state.reagents)
-_did_autofill = False
-for _i, _row in df_in.iterrows():
-    _nom = str(_row.get("Nom") or "").strip().lower()
-    _mw  = _row.get("MW (g/mol)")
-    if _nom and (pd.isna(_mw) or _mw == 0):
-        _match = inv_dict.get(_nom)
-        if _match and _match.get("mw"):
-            df_in.at[_i, "MW (g/mol)"] = float(_match["mw"])
-            _did_autofill = True
-
-# Si on a auto-rempli une MW, mettre à jour session_state et forcer un re-render
-if _did_autofill:
-    _filled = _df_to_reagents(df_in)
-    if _filled != st.session_state.reagents:
-        st.session_state.reagents = _filled
-        st.session_state.editor_version += 1
-        st.rerun()
-
-edited = st.data_editor(
-    df_in,
-    key=f"_reagents_editor_{st.session_state.editor_version}",
-    column_config={
-        "Nom":        st.column_config.TextColumn("Nom du composé", width="large"),
-        "Rôle":       st.column_config.SelectboxColumn("Rôle", options=ROLES, width="medium"),
-        "MW (g/mol)": st.column_config.NumberColumn("MW (g/mol)", min_value=0, format="%.2f"),
-        "Masse (g)":  st.column_config.NumberColumn("Masse (g)", min_value=0, format="%.4f",
-                                                     help="Remplir uniquement pour le Limitant"),
-        "Éq":         st.column_config.NumberColumn("Éq", min_value=0, format="%.3f",
-                                                     help="Remplir pour les autres réactifs"),
-        "Pureté (%)": st.column_config.NumberColumn("Pureté %", min_value=0, max_value=100, format="%.1f"),
-        "Densité":    st.column_config.NumberColumn("Densité", min_value=0, format="%.3f"),
-    },
-    num_rows="dynamic",
-    use_container_width=True,
+# ── TABS ──────────────────────────────────────────────────────────────────────
+tab_r, tab_t, tab_ia, tab_ex, tab_cfg = st.tabs(
+    ["🧪 Réactifs", "📊 Tableau", "🤖 IA", "📤 Export", "⚙️ Paramètres"]
 )
 
-new_reagents = _df_to_reagents(edited)
-if new_reagents != st.session_state.reagents:
-    st.session_state.reagents = new_reagents
-    st.session_state.prod["mw_manual"] = False
-    st.session_state.prod["mw"] = 0.0
-
-# Recherche PubChem
-with st.expander("🔍 Rechercher une MW via PubChem", expanded=False):
-    pc1, pc2 = st.columns([4, 1])
-    with pc1:
-        pc_q = st.text_input("Nom IUPAC ou CAS", key="_pc_query", placeholder="ex : acide acétique",
-                              label_visibility="collapsed")
-    with pc2:
-        pc_go = st.button("Chercher", width="stretch")
-    if pc_go and pc_q:
-        with st.spinner("Recherche…"):
-            pc_res, pc_err = pc_search(pc_q)
-        if pc_err:
-            st.error(pc_err)
-        else:
-            st.success(f"**{pc_res['name']}** — MW : **{pc_res['mw']} g/mol** ({pc_res['formula']})")
-
-st.divider()
-
 # ===========================================================================
-# SECTION 2 — Tableau des résultats calculés
+# TAB 1 — Réactifs
 # ===========================================================================
-n_lim2, results2, prod_result2 = recalc(st.session_state.reagents, st.session_state.prod)
-if n_lim2 and results2:
-    prod_name = st.session_state.prod["name"] or "Produit"
-    df_res = build_display_df(st.session_state.reagents, results2, prod_result2, prod_name)
+with tab_r:
 
-    # Transposé : réactifs en lignes, propriétés en colonnes
-    df_t = df_res.T
+    # ── PubChem ──────────────────────────────────────────────────────────────
+    with st.expander("🔍 Rechercher via PubChem", expanded=False):
+        pc1, pc2 = st.columns([3, 1])
+        with pc1:
+            pc_q = st.text_input("Nom IUPAC ou CAS", key="_pc_query", placeholder="ex : acide acétique")
+        with pc2:
+            st.write("")
+            pc_go = st.button("Chercher", width="stretch")
+        if pc_go and pc_q:
+            with st.spinner("Recherche PubChem…"):
+                pc_res, pc_err = pc_search(pc_q)
+            if pc_err:
+                st.error(pc_err)
+            else:
+                st.success(f"✅ {pc_res['name']} — MW : {pc_res['mw']} g/mol — {pc_res['formula']}")
+                st.session_state._pc_prefill = pc_res
 
-    st.subheader("📊 Résultats")
-    st.dataframe(df_t, use_container_width=True)
+    # ── Formulaire ajout ─────────────────────────────────────────────────────
+    st.subheader("Ajouter un réactif")
+    inv = load_inventaire()
+    if inv:
+        noms_inv = [p["nom"] for p in inv]
+        noms_uniq = list(dict.fromkeys(noms_inv))
+        sel_inv = st.selectbox("📦 Depuis mon inventaire", noms_uniq,
+                               index=None, placeholder="Taper pour rechercher…", key="_inv_sel")
+        if sel_inv:
+            match = next((p for p in inv if p["nom"] == sel_inv), None)
+            if match:
+                st.session_state._pc_prefill = {"name": match["nom"], "mw": match["mw"] or 0}
+        elif sel_inv is None and st.session_state.get("_inv_sel_was_set"):
+            st.session_state._pc_prefill = None
+        st.session_state["_inv_sel_was_set"] = sel_inv is not None
+    prefill = st.session_state._pc_prefill or {}
 
-    cond  = st.session_state.conditions
-    parts = []
-    if cond["solvant"]: parts.append(f"Solvant : **{cond['solvant']}**")
-    if cond["temp"]:    parts.append(f"T : **{cond['temp']} °C**")
-    if cond["time"]:    parts.append(f"t : **{cond['time']} h**")
-    if parts:
-        st.caption("Conditions : " + "   ·   ".join(parts))
+    with st.form("form_add", clear_on_submit=True):
+        already_lim = any(r["role"] == "Limitant" for r in st.session_state.reagents)
+        c1, c2, c3, c4 = st.columns([3, 1.5, 1.5, 2])
+        with c1:
+            f_name = st.text_input("Nom *", value=prefill.get("name", ""))
+        with c2:
+            f_role = st.selectbox("Rôle", ROLES, index=1 if already_lim else 0)
+        with c3:
+            f_mw = st.number_input("MW (g/mol) *", value=float(prefill.get("mw") or 0),
+                                    min_value=0.0, step=0.01, format="%.4f")
+        with c4:
+            masse_label = "Masse (g) *" if f_role == "Limitant" else "Équivalents *"
+            masse_step  = 0.001 if f_role == "Limitant" else 0.1
+            masse_def   = 0.0   if f_role == "Limitant" else 1.0
+            f_val_str   = st.text_input(masse_label, value="",
+                                        placeholder="ex : 0.250" if f_role == "Limitant" else "ex : 1.0")
 
-elif st.session_state.reagents:
-    st.info("Renseignez le **Rôle = Limitant**, sa **MW** et sa **Masse (g)** pour calculer.")
+        cp1, cp2 = st.columns(2)
+        with cp1:
+            f_purity = st.number_input("Pureté (%)", value=100.0,
+                                        min_value=0.1, max_value=100.0, step=0.1)
+        with cp2:
+            f_density = st.number_input("Densité (g/mL) — optionnel", value=0.0,
+                                         min_value=0.0, step=0.001, format="%.4f")
 
-st.divider()
+        add_btn = st.form_submit_button("➕ Ajouter le réactif", width="stretch")
 
-# ===========================================================================
-# SECTION 3 — Produit & Conditions
-# ===========================================================================
-with st.expander("🧪 Produit & Conditions", expanded=False):
-    prod = st.session_state.prod
-    pa, pb, pc_, pd_ = st.columns(4)
-    with pa:
-        pn = st.text_input("Nom produit", value=prod["name"], key="_prod_name")
-        st.session_state.prod["name"] = pn
-    with pb:
-        pmw = st.number_input("MW produit (g/mol)", value=float(prod["mw"] or 0),
-                               min_value=0.0, step=0.01, key="_prod_mw")
-        if pmw != prod["mw"]:
-            st.session_state.prod["mw"] = pmw
-            st.session_state.prod["mw_manual"] = pmw > 0
-    with pc_:
-        pyd = st.number_input("Rendement (0–1)", value=float(prod["yield"]),
-                               min_value=0.0, max_value=1.0, step=0.05, key="_prod_yield")
-        if pyd != prod["yield"]:
-            st.session_state.prod["yield"] = pyd
-            st.session_state.prod["yield_manual"] = True
-            st.session_state.prod["mass_manual"]  = False
-    with pd_:
-        pdens = st.number_input("Densité produit", value=float(prod["density"] or 0),
-                                 min_value=0.0, step=0.001, format="%.4f", key="_prod_dens")
-        st.session_state.prod["density"] = pdens
+        try:
+            f_val = float(f_val_str.replace(",", ".")) if f_val_str.strip() else 0.0
+        except ValueError:
+            f_val = 0.0
 
-    st.caption("Conditions réactionnelles")
-    ca, cb, cc = st.columns(3)
-    cond = st.session_state.conditions
-    with ca:
-        opts = [""] + SOLVANTS_USUELS
-        idx  = opts.index(cond["solvant"]) if cond["solvant"] in opts else 0
-        sel  = st.selectbox("Solvant", opts, index=idx, key="_cond_solvant")
-        st.session_state.conditions["solvant"] = sel
-    with cb:
-        t = st.text_input("T (°C)", value=cond["temp"], placeholder="ex : 80", key="_cond_temp")
-        st.session_state.conditions["temp"] = t
-    with cc:
-        d = st.text_input("t (h)", value=cond["time"], placeholder="ex : 2", key="_cond_time")
-        st.session_state.conditions["time"] = d
+        if add_btn:
+            err = None
+            if not f_name.strip():
+                err = "Le nom est obligatoire."
+            elif f_mw <= 0:
+                err = "MW invalide (doit être > 0)."
+            elif f_role == "Limitant" and already_lim:
+                err = "Un réactif Limitant existe déjà."
+            elif f_role == "Limitant" and f_val <= 0:
+                err = "La masse est obligatoire pour le Limitant."
+            elif f_role != "Limitant" and f_val <= 0:
+                err = "Les équivalents doivent être > 0."
+            if err:
+                st.error(err)
+            else:
+                st.session_state.reagents.append({
+                    "name":    f_name.strip(),
+                    "mw":      f_mw,
+                    "purity":  f_purity,
+                    "role":    f_role,
+                    "eq":      1.0 if f_role == "Limitant" else f_val,
+                    "mass_g":  f_val if f_role == "Limitant" else 0.0,
+                    "density": f_density,
+                })
+                st.session_state._pc_prefill = None
+                st.session_state.prod["mw_manual"] = False
+                st.session_state.prod["mw"] = 0.0
+                st.rerun()
 
-# ===========================================================================
-# SECTION 4 — IA
-# ===========================================================================
-with st.expander("🤖 Procédure IA & Chat", expanded=False):
-    if not st.session_state.reagents:
-        st.info("Ajoutez des réactifs pour activer l'IA.")
+    # ── Liste des réactifs ───────────────────────────────────────────────────
+    if st.session_state.reagents:
+        st.subheader("Réactifs ajoutés")
+
+        ROLE_COLORS = {
+            "Limitant":   "#dbeafe",
+            "Réactif":    "#f1f5f9",
+            "Solvant":    "#fef9c3",
+            "Catalyseur": "#fce7f3",
+            "Autre":      "#f5f5f4",
+        }
+
+        to_delete = None
+        for i, r in enumerate(st.session_state.reagents):
+            col_info, col_edit, col_del = st.columns([3, 2, 1])
+            with col_info:
+                badge_color = ROLE_COLORS.get(r["role"], "#f1f5f9")
+                st.markdown(
+                    f'**{r["name"]}**'
+                    f'<span class="role-badge" style="background:{badge_color}">{r["role"]}</span>',
+                    unsafe_allow_html=True
+                )
+                dens_txt = f" | Densité : {r['density']}" if r.get("density") else ""
+                st.caption(f"MW : {r['mw']} g/mol | Pureté : {r['purity']}%{dens_txt}")
+            with col_edit:
+                if r["role"] == "Limitant":
+                    new_v = st.number_input(
+                        "Masse (g)", value=float(r["mass_g"]),
+                        min_value=0.0, step=0.001, format="%.4f",
+                        key=f"_edit_mass_{i}", label_visibility="collapsed"
+                    )
+                    st.session_state.reagents[i]["mass_g"] = new_v
+                else:
+                    new_v = st.number_input(
+                        "Éq", value=float(r["eq"]),
+                        min_value=0.0, step=0.1, format="%.3f",
+                        key=f"_edit_eq_{i}", label_visibility="collapsed"
+                    )
+                    st.session_state.reagents[i]["eq"] = new_v
+            with col_del:
+                st.write("")
+                if st.button("🗑️", key=f"_del_{i}"):
+                    to_delete = i
+
+            st.divider()
+
+        if to_delete is not None:
+            st.session_state.reagents.pop(to_delete)
+            st.session_state.prod["mw_manual"] = False
+            st.session_state.prod["mw"] = 0.0
+            st.rerun()
+
+        if st.button("🗑️ Réinitialiser tout", type="secondary"):
+            st.session_state.reagents = []
+            st.session_state.prod = {
+                "name": "", "mw": 0.0, "mw_manual": False,
+                "yield": 1.0, "yield_manual": False,
+                "mass": 0.0, "mass_manual": False, "density": 0.0
+            }
+            st.session_state.conditions = {"solvant": "", "temp": "", "time": ""}
+            st.session_state.procedure = ""
+            st.session_state.chat_history = []
+            st.rerun()
+
     else:
-        ia1, ia2 = st.columns([1, 1])
+        st.info("Ajoutez un réactif **Limitant** pour commencer.")
 
-        with ia1:
-            st.markdown("**Procédure expérimentale**")
-            if st.button("🤖 Générer", type="primary", width="stretch", key="_ia_gen"):
+    # ── Conditions & Produit ─────────────────────────────────────────────────
+    if st.session_state.reagents:
+        st.subheader("Conditions réactionnelles")
+        cc1, cc2, cc3 = st.columns(3)
+        cond = st.session_state.conditions
+        with cc1:
+            opts = [""] + SOLVANTS_USUELS
+            idx = opts.index(cond["solvant"]) if cond["solvant"] in opts else 0
+            sel = st.selectbox("Solvant", opts, index=idx, key="_cond_solvant")
+            st.session_state.conditions["solvant"] = sel
+        with cc2:
+            t = st.text_input("T (°C)", value=cond["temp"], placeholder="ex : 80", key="_cond_temp")
+            st.session_state.conditions["temp"] = t
+        with cc3:
+            d = st.text_input("t (h)", value=cond["time"], placeholder="ex : 2", key="_cond_time")
+            st.session_state.conditions["time"] = d
+
+        st.subheader("Produit")
+        prod = st.session_state.prod
+        pp1, pp2, pp3, pp4 = st.columns(4)
+        with pp1:
+            pn = st.text_input("Nom produit", value=prod["name"], key="_prod_name")
+            st.session_state.prod["name"] = pn
+        with pp2:
+            pmw = st.number_input("MW (g/mol)", value=float(prod["mw"] or 0),
+                                   min_value=0.0, step=0.01, key="_prod_mw")
+            if pmw != prod["mw"]:
+                st.session_state.prod["mw"] = pmw
+                st.session_state.prod["mw_manual"] = pmw > 0
+        with pp3:
+            pyd = st.number_input("Rendement (0–1)", value=float(prod["yield"]),
+                                   min_value=0.0, max_value=1.0, step=0.05, key="_prod_yield")
+            if pyd != prod["yield"]:
+                st.session_state.prod["yield"] = pyd
+                st.session_state.prod["yield_manual"] = True
+                st.session_state.prod["mass_manual"] = False
+        with pp4:
+            pdens = st.number_input("Densité produit", value=float(prod["density"] or 0),
+                                     min_value=0.0, step=0.001, format="%.4f", key="_prod_dens")
+            st.session_state.prod["density"] = pdens
+
+# ===========================================================================
+# TAB 2 — Tableau
+# ===========================================================================
+with tab_t:
+    if not st.session_state.reagents:
+        st.info("Ajoutez des réactifs dans l'onglet **Réactifs** pour voir le tableau.")
+    else:
+        n_lim2, results2, prod_result2 = recalc(st.session_state.reagents, st.session_state.prod)
+        prod_name = st.session_state.prod["name"] or "Produit"
+        df = build_display_df(st.session_state.reagents, results2, prod_result2, prod_name)
+
+        # Style : colonne produit en vert, autres en bleu très clair
+        def _style(df):
+            styles = pd.DataFrame("", index=df.index, columns=df.columns)
+            for col in df.columns:
+                if col == prod_name:
+                    styles[col] = "background-color:#f0fdf4; color:#15803d; font-weight:bold"
+                else:
+                    styles[col] = "background-color:#f8fafc"
+            return styles
+
+        st.dataframe(df.style.apply(_style, axis=None), width="stretch")
+
+        # Conditions
+        cond = st.session_state.conditions
+        parts = []
+        if cond["solvant"]: parts.append(f"Solvant : **{cond['solvant']}**")
+        if cond["temp"]:    parts.append(f"T : **{cond['temp']} °C**")
+        if cond["time"]:    parts.append(f"t : **{cond['time']} h**")
+        if parts:
+            st.markdown("**Conditions :** " + "   |   ".join(parts))
+
+# ===========================================================================
+# TAB 3 — IA
+# ===========================================================================
+with tab_ia:
+    if not st.session_state.reagents:
+        st.info("Ajoutez des réactifs d'abord.")
+    else:
+        col_proc, col_chat = st.columns([1, 1])
+
+        # ── Procédure ────────────────────────────────────────────────────────
+        with col_proc:
+            st.subheader("Procédure expérimentale")
+
+            if st.button("🤖 Générer la procédure", type="primary", width="stretch"):
                 lim_ok = any(r["role"] == "Limitant" for r in st.session_state.reagents)
                 if not lim_ok:
-                    st.error("Définissez un réactif Limitant.")
+                    st.error("Définissez un réactif Limitant d'abord.")
                 else:
                     provider = charger_provider()
                     api_key  = charger_api_key(provider)
                     if not api_key:
-                        st.error("Clé API manquante (Paramètres).")
+                        st.error("Configurez votre clé API dans l'onglet **Paramètres**.")
                     else:
-                        prompt = _build_prompt(st.session_state.reagents,
-                                               st.session_state.prod,
-                                               st.session_state.conditions)
-                        gen = (_gemini_gen(prompt, _SYSTEM_PROCEDURE, api_key)
-                               if provider == "gemini"
-                               else _groq_gen(prompt, _SYSTEM_PROCEDURE, api_key, max_tokens=1024))
+                        prompt = _build_prompt(
+                            st.session_state.reagents,
+                            st.session_state.prod,
+                            st.session_state.conditions
+                        )
+                        if provider == "gemini":
+                            gen = _gemini_gen(prompt, _SYSTEM_PROCEDURE, api_key)
+                        else:
+                            gen = _groq_gen(prompt, _SYSTEM_PROCEDURE, api_key, max_tokens=1024)
+
                         full = st.write_stream(gen)
                         st.session_state.procedure = full
+
+                        # Extraction automatique
                         info = extract_ai_info(full)
                         p = st.session_state.prod
-                        if "prod_name"  in info and not p["name"]:         st.session_state.prod["name"]  = info["prod_name"]
-                        if "prod_mw"    in info and not p["mw_manual"]:    st.session_state.prod["mw"]    = info["prod_mw"];  st.session_state.prod["mw_manual"]    = True
-                        if "prod_yield" in info and not p["yield_manual"]: st.session_state.prod["yield"] = info["prod_yield"]; st.session_state.prod["yield_manual"] = True
+                        if "prod_name" in info and not p["name"]:
+                            st.session_state.prod["name"] = info["prod_name"]
+                        if "prod_mw" in info and not p["mw_manual"]:
+                            st.session_state.prod["mw"] = info["prod_mw"]
+                            st.session_state.prod["mw_manual"] = True
+                        if "prod_yield" in info and not p["yield_manual"]:
+                            st.session_state.prod["yield"] = info["prod_yield"]
+                            st.session_state.prod["yield_manual"] = True
                         c = st.session_state.conditions
-                        if "solvant" in info and not c["solvant"]: st.session_state.conditions["solvant"] = info["solvant"]
-                        if "temp"    in info and not c["temp"]:    st.session_state.conditions["temp"]    = info["temp"]
-                        if "time"    in info and not c["time"]:    st.session_state.conditions["time"]    = info["time"]
+                        if "solvant" in info and not c["solvant"]:
+                            st.session_state.conditions["solvant"] = info["solvant"]
+                        if "temp" in info and not c["temp"]:
+                            st.session_state.conditions["temp"] = info["temp"]
+                        if "time" in info and not c["time"]:
+                            st.session_state.conditions["time"] = info["time"]
                         st.rerun()
 
             if st.session_state.procedure:
                 st.text_area("Procédure", value=st.session_state.procedure,
-                             height=380, label_visibility="collapsed", key="_proc_display")
-                if st.button("🗑️ Effacer procédure", key="_proc_clear"):
+                             height=420, label_visibility="collapsed", key="_proc_display")
+                if st.button("🗑️ Effacer"):
                     st.session_state.procedure = ""
                     st.rerun()
 
-        with ia2:
-            st.markdown("**Chat**")
+        # ── Chat ─────────────────────────────────────────────────────────────
+        with col_chat:
+            st.subheader("Chat IA")
             if not st.session_state.procedure:
-                st.info("Générez une procédure pour activer le chat.")
+                st.info("Générez d'abord une procédure pour activer le chat.")
             else:
                 for msg in st.session_state.chat_history:
                     with st.chat_message(msg["role"]):
                         st.write(msg["content"])
-                user_q = st.chat_input("Question sur la procédure…")
+
+                user_q = st.chat_input("Posez une question sur la procédure…")
                 if user_q:
                     provider = charger_provider()
                     api_key  = charger_api_key(provider)
@@ -892,68 +944,108 @@ with st.expander("🤖 Procédure IA & Chat", expanded=False):
                         st.error("Clé API manquante.")
                     else:
                         st.session_state.chat_history.append({"role": "user", "content": user_q})
-                        context = ("Fiche de synthèse :\n\n" + st.session_state.procedure
-                                   + "\n\nRéponds en te basant sur cette fiche. Sois concis.")
+                        context = (
+                            "Voici la fiche de synthèse :\n\n"
+                            + st.session_state.procedure
+                            + "\n\nRéponds en te basant sur cette fiche. Sois concis."
+                        )
                         with st.chat_message("assistant"):
                             if provider == "gemini":
-                                msgs_g = [{"role":"user","parts":[{"text":context}]},
-                                           {"role":"model","parts":[{"text":"Compris."}]}]
+                                msgs_g = [
+                                    {"role": "user",  "parts": [{"text": context}]},
+                                    {"role": "model", "parts": [{"text": "Compris."}]},
+                                ]
                                 for m in st.session_state.chat_history[:-1]:
-                                    msgs_g.append({"role":"user" if m["role"]=="user" else "model",
-                                                   "parts":[{"text":m["content"]}]})
-                                msgs_g.append({"role":"user","parts":[{"text":st.session_state.chat_history[-1]["content"]}]})
-                                response = st.write_stream(_gemini_chat_gen(msgs_g, _SYSTEM_CHAT, api_key))
+                                    role = "user" if m["role"] == "user" else "model"
+                                    msgs_g.append({"role": role, "parts": [{"text": m["content"]}]})
+                                msgs_g.append({"role": "user", "parts": [{"text": st.session_state.chat_history[-1]["content"]}]})
+                                response = st.write_stream(
+                                    _gemini_chat_gen(msgs_g, _SYSTEM_CHAT, api_key)
+                                )
                             else:
-                                response = st.write_stream(_groq_chat_gen(
-                                    st.session_state.chat_history, context, _SYSTEM_CHAT, api_key))
-                        st.session_state.chat_history.append({"role":"assistant","content":response})
+                                response = st.write_stream(
+                                    _groq_chat_gen(st.session_state.chat_history,
+                                                   context, _SYSTEM_CHAT, api_key)
+                                )
+                        st.session_state.chat_history.append({"role": "assistant", "content": response})
+
                 if st.session_state.chat_history:
-                    if st.button("🗑️ Effacer chat", key="_chat_clear"):
+                    if st.button("🗑️ Effacer le chat"):
                         st.session_state.chat_history = []
                         st.rerun()
 
 # ===========================================================================
-# SECTION 5 — Export
+# TAB 4 — Export
 # ===========================================================================
-with st.expander("📤 Export CSV / PDF", expanded=False):
+with tab_ex:
     if not st.session_state.reagents:
         st.info("Ajoutez des réactifs d'abord.")
     else:
         _, res_ex, pr_ex = recalc(st.session_state.reagents, st.session_state.prod)
         prod_name_ex = st.session_state.prod["name"] or "Produit"
         df_ex = build_display_df(st.session_state.reagents, res_ex, pr_ex, prod_name_ex)
+
         col_names  = list(df_ex.columns)
         row_labels = list(df_ex.index)
         matrix     = [[df_ex.at[r, c] or "-" for c in col_names] for r in row_labels]
 
+        st.subheader("Télécharger")
         ex1, ex2 = st.columns(2)
+
         with ex1:
             csv_lines = [";" + ";".join(col_names)]
             for label, row in zip(row_labels, matrix):
                 csv_lines.append(label + ";" + ";".join(row))
             if st.session_state.procedure:
                 csv_lines += ["", "", "Procédure expérimentale (IA)", st.session_state.procedure]
-            st.download_button("📄 CSV", data="\n".join(csv_lines).encode("utf-8-sig"),
-                               file_name=f"{st.session_state.rxn_name}_stochio.csv",
-                               mime="text/csv", width="stretch")
+            st.download_button(
+                "📄 Télécharger CSV",
+                data="\n".join(csv_lines).encode("utf-8-sig"),
+                file_name=f"{st.session_state.rxn_name}_stochio.csv",
+                mime="text/csv",
+                width="stretch",
+            )
+
         with ex2:
             try:
                 pdf_bytes = make_pdf(col_names, row_labels, matrix,
-                                     st.session_state.rxn_name, procedure=st.session_state.procedure)
-                st.download_button("📑 PDF", data=pdf_bytes,
-                                   file_name=f"{st.session_state.rxn_name}_stochio.pdf",
-                                   mime="application/pdf", width="stretch")
+                                     st.session_state.rxn_name,
+                                     procedure=st.session_state.procedure)
+                st.download_button(
+                    "📑 Télécharger PDF",
+                    data=pdf_bytes,
+                    file_name=f"{st.session_state.rxn_name}_stochio.pdf",
+                    mime="application/pdf",
+                    width="stretch",
+                )
             except Exception as e:
                 st.error(f"Erreur PDF : {e}")
 
 # ===========================================================================
-# SECTION 6 — Paramètres
+# TAB 5 — Paramètres
 # ===========================================================================
-with st.expander("⚙️ Paramètres", expanded=False):
+with tab_cfg:
     provider_actif = charger_provider()
     key_ok = bool(charger_api_key(provider_actif))
+
+    st.subheader("Statut IA")
     if key_ok:
         st.success(f"✅ Fournisseur actif : **{provider_actif}** — clé configurée")
     else:
         st.error("❌ Aucune clé API trouvée dans `.streamlit/secrets.toml`")
-    st.caption("**À propos** — Stœchiométrie H&B · Streamlit + Gemini 2.5 Flash / Groq + PubChem")
+
+    st.info(
+        "Les clés API sont stockées dans le fichier **`.streamlit/secrets.toml`** "
+        "sur votre PC et ne transitent jamais dans le navigateur.\n\n"
+        "Pour changer de fournisseur ou de clé, éditez directement ce fichier :\n"
+        "```\n"
+        "ai_provider = \"gemini\"   # ou \"groq\"\n"
+        "gemini_key  = \"AIza...\"\n"
+        "groq_key    = \"gsk_...\"\n"
+        "```"
+    )
+
+    st.divider()
+    st.caption("**Accès téléphone** — lancez `streamlit run stochio_st.py` sur votre PC, "
+               "puis ouvrez `http://192.168.1.12:8501` depuis votre téléphone (même Wi-Fi).")
+    st.caption("**À propos** — Calculateur de Stœchiométrie H&B · Streamlit + Gemini 2.5 Flash / Groq llama-3.3-70b + PubChem")
