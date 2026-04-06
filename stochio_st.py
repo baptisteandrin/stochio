@@ -609,6 +609,7 @@ def _init():
         "rxn_name": "Synthèse",
         "procedure": "",
         "chat_history": [],
+        "editor_version": 0,
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -684,36 +685,42 @@ st.divider()
 inv      = load_inventaire()
 inv_dict = {p["nom"].lower(): p for p in inv} if inv else {}
 
-# Auto-remplir MW depuis inventaire quand un nom est connu et MW manquante
-_updated = False
-for i, r in enumerate(st.session_state.reagents):
-    if r["name"] and not r["mw"]:
-        match = inv_dict.get(r["name"].lower())
-        if match and match.get("mw"):
-            st.session_state.reagents[i]["mw"] = match["mw"]
-            _updated = True
-if _updated:
-    # Forcer le data_editor à se reconstruire depuis session_state
-    if "_reagents_editor" in st.session_state:
-        del st.session_state["_reagents_editor"]
-    st.rerun()
-
 col_title, col_reset = st.columns([4, 1])
 with col_title:
     st.subheader("Réactifs")
 with col_reset:
     if st.button("🗑️ Reset", help="Réinitialiser tout"):
-        st.session_state.reagents  = []
-        st.session_state.prod      = {"name":"","mw":0.0,"mw_manual":False,"yield":1.0,
-                                       "yield_manual":False,"mass":0.0,"mass_manual":False,"density":0.0}
+        st.session_state.reagents   = []
+        st.session_state.prod       = {"name":"","mw":0.0,"mw_manual":False,"yield":1.0,
+                                        "yield_manual":False,"mass":0.0,"mass_manual":False,"density":0.0}
         st.session_state.conditions = {"solvant":"","temp":"","time":""}
         st.session_state.procedure  = ""
         st.session_state.chat_history = []
         st.rerun()
 
-df_in  = _reagents_to_df(st.session_state.reagents)
+# Construire le df et auto-remplir MW depuis inventaire
+df_in = _reagents_to_df(st.session_state.reagents)
+_did_autofill = False
+for _i, _row in df_in.iterrows():
+    _nom = str(_row.get("Nom") or "").strip().lower()
+    _mw  = _row.get("MW (g/mol)")
+    if _nom and (pd.isna(_mw) or _mw == 0):
+        _match = inv_dict.get(_nom)
+        if _match and _match.get("mw"):
+            df_in.at[_i, "MW (g/mol)"] = float(_match["mw"])
+            _did_autofill = True
+
+# Si on a auto-rempli une MW, mettre à jour session_state et forcer un re-render
+if _did_autofill:
+    _filled = _df_to_reagents(df_in)
+    if _filled != st.session_state.reagents:
+        st.session_state.reagents = _filled
+        st.session_state.editor_version += 1
+        st.rerun()
+
 edited = st.data_editor(
     df_in,
+    key=f"_reagents_editor_{st.session_state.editor_version}",
     column_config={
         "Nom":        st.column_config.TextColumn("Nom du composé", width="large"),
         "Rôle":       st.column_config.SelectboxColumn("Rôle", options=ROLES, width="medium"),
@@ -727,7 +734,6 @@ edited = st.data_editor(
     },
     num_rows="dynamic",
     use_container_width=True,
-    key="_reagents_editor",
 )
 
 new_reagents = _df_to_reagents(edited)
