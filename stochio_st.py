@@ -780,6 +780,22 @@ input, textarea {{
 .dataframe td, .dataframe th {{
     color: {_th.th_text} !important; font-size: {_th.th_font_size - 1}px;
 }}
+
+/* ── Dropdown mobile : scroll tactile ── */
+[data-baseweb="popover"] {{
+    max-height: 55vh !important;
+}}
+[data-baseweb="popover"] [data-baseweb="menu"] {{
+    max-height: 50vh !important;
+    overflow-y: scroll !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior: contain !important;
+}}
+[data-baseweb="popover"] [role="option"] {{
+    min-height: 44px !important;
+    padding: 10px 14px !important;
+    font-size: {_th.th_font_size}px !important;
+}}
 </style>
 """, unsafe_allow_html=True)
 
