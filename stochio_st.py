@@ -611,6 +611,14 @@ def _init():
         "th_form_border": "#e2e8f0",
         "th_form_lbl":    "#0f172a",
         "th_form_lbl_fs": 13,
+        # ── Selectbox / menus déroulants ──
+        "th_sel_bg":      "#ffffff",
+        "th_sel_text":    "#0f172a",
+        "th_sel_border":  "#94a3b8",
+        # ── Expanders ──
+        "th_exp_bg":      "#ffffff",
+        "th_exp_border":  "#e2e8f0",
+        "th_exp_title":   "#0f172a",
         # ── Boutons ──
         "th_btn_bg":      "#1e40af",
         "th_btn_text":    "#ffffff",
@@ -731,10 +739,41 @@ input, textarea {{
     border: 1px solid {_th.th_form_border} !important;
     border-radius: 10px; padding: 12px;
 }}
-[data-testid="stForm"] label, [data-testid="stForm"] [data-testid="stWidgetLabel"] > div {{
+[data-testid="stForm"] label,
+[data-testid="stForm"] [data-testid="stWidgetLabel"] > div {{
     color: {_th.th_form_lbl} !important;
     font-size: {_th.th_form_lbl_fs}px !important;
     font-weight: 600;
+}}
+
+/* ── Selectbox / menus déroulants ── */
+[data-baseweb="select"] > div,
+[data-baseweb="select"] [data-baseweb="input"] {{
+    background: {_th.th_sel_bg} !important;
+    border-color: {_th.th_sel_border} !important;
+}}
+[data-baseweb="select"] span,
+[data-baseweb="select"] [data-baseweb="input"] input {{
+    color: {_th.th_sel_text} !important;
+}}
+/* Menu déroulant ouvert */
+[data-baseweb="popover"] [data-baseweb="menu"] {{
+    background: {_th.th_sel_bg} !important;
+}}
+[data-baseweb="popover"] [role="option"] {{
+    color: {_th.th_sel_text} !important;
+}}
+
+/* ── Expanders ── */
+[data-testid="stExpander"] {{
+    background: {_th.th_exp_bg} !important;
+    border: 1px solid {_th.th_exp_border} !important;
+    border-radius: 10px;
+}}
+[data-testid="stExpander"] summary,
+[data-testid="stExpander"] summary p {{
+    color: {_th.th_exp_title} !important;
+    font-weight: 700;
 }}
 
 /* ── Tableau ── */
@@ -1205,6 +1244,8 @@ _ALL_TH_KEYS = [
     "th_tab_bar","th_tab_text","th_tab_act_bg","th_tab_act_txt",
     "th_inp_bg","th_inp_text","th_inp_border","th_inp_fs",
     "th_form_bg","th_form_border","th_form_lbl","th_form_lbl_fs",
+    "th_sel_bg","th_sel_text","th_sel_border",
+    "th_exp_bg","th_exp_border","th_exp_title",
     "th_card_bg","th_card_name_fs","th_card_info_fs",
     "th_bord_lim","th_bord_reac","th_bord_solv","th_bord_cat","th_bord_aut",
     "th_badge_lim","th_badge_reac","th_badge_solv","th_badge_cat","th_badge_aut",
@@ -1279,6 +1320,22 @@ def _cfg_reactifs():
     with f2:
         _cp("Couleur des labels", "th_form_lbl")
         _sl("Taille police labels (px)", "th_form_lbl_fs", 9, 20)
+
+    st.markdown("### 🔽 Boîtes déroulantes (inventaire, rôle…)")
+    s1, s2 = st.columns(2)
+    with s1:
+        _cp("Fond de la boîte", "th_sel_bg")
+        _cp("Texte", "th_sel_text")
+    with s2:
+        _cp("Bordure", "th_sel_border")
+
+    st.markdown("### 📂 Sections dépliables (expanders)")
+    e1, e2 = st.columns(2)
+    with e1:
+        _cp("Fond", "th_exp_bg")
+        _cp("Bordure", "th_exp_border")
+    with e2:
+        _cp("Couleur du titre", "th_exp_title")
     st.markdown("### 🃏 Cartes réactifs ajoutés")
     c1, c2 = st.columns(2)
     with c1:
