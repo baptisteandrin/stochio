@@ -834,11 +834,21 @@ input, textarea {{
     color: {_th.th_sel_text} !important;
 }}
 /* Menu déroulant ouvert */
-[data-baseweb="popover"] [data-baseweb="menu"] {{
+[data-baseweb="popover"],
+[data-baseweb="popover"] > div,
+[data-baseweb="popover"] [data-baseweb="menu"],
+ul[role="listbox"] {{
     background: {_th.th_sel_bg} !important;
-}}
-[data-baseweb="popover"] [role="option"] {{
     color: {_th.th_sel_text} !important;
+}}
+[data-baseweb="popover"] [role="option"],
+ul[role="listbox"] li {{
+    background: {_th.th_sel_bg} !important;
+    color: {_th.th_sel_text} !important;
+}}
+[data-baseweb="popover"] [role="option"]:hover,
+ul[role="listbox"] li:hover {{
+    filter: brightness(0.92);
 }}
 
 /* ── Expanders ── */
