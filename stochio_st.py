@@ -601,6 +601,11 @@ def _init():
         "th_badge_solv":  "#d97706",
         "th_badge_cat":   "#9333ea",
         "th_badge_aut":   "#64748b",
+        # ── Champs de saisie ──
+        "th_inp_bg":      "#ffffff",
+        "th_inp_text":    "#0f172a",
+        "th_inp_border":  "#94a3b8",
+        "th_inp_fs":      14,
         # ── Boutons ──
         "th_btn_bg":      "#1e40af",
         "th_btn_text":    "#ffffff",
@@ -693,7 +698,16 @@ h1, h2, h3, h4 {{ color: {_th.th_text} !important; font-weight: 700 !important; 
 .badge-aut  {{ background: {_th.th_badge_aut}; }}
 
 /* ── Inputs ── */
-input, textarea {{ color: {_th.th_text} !important; font-size: {_th.th_font_size}px !important; }}
+input, textarea {{
+    background: {_th.th_inp_bg} !important;
+    color: {_th.th_inp_text} !important;
+    font-size: {_th.th_inp_fs}px !important;
+    border-color: {_th.th_inp_border} !important;
+}}
+[data-baseweb="input"], [data-baseweb="textarea"] {{
+    background: {_th.th_inp_bg} !important;
+    border-color: {_th.th_inp_border} !important;
+}}
 
 /* ── Boutons ── */
 .stButton > button {{
@@ -1166,53 +1180,102 @@ def _ti(label, key):
         st.session_state[key] = v
         st.rerun()
 
+_ALL_TH_KEYS = [
+    "th_bg","th_text","th_font_size",
+    "th_ib_bg","th_ib_text","th_ib_fs",
+    "th_tab_bar","th_tab_text","th_tab_act_bg","th_tab_act_txt",
+    "th_inp_bg","th_inp_text","th_inp_border","th_inp_fs",
+    "th_card_bg","th_card_name_fs","th_card_info_fs",
+    "th_bord_lim","th_bord_reac","th_bord_solv","th_bord_cat","th_bord_aut",
+    "th_badge_lim","th_badge_reac","th_badge_solv","th_badge_cat","th_badge_aut",
+    "th_btn_bg","th_btn_text","th_btn_fs",
+    "lbl_titre","lbl_tab_r","lbl_tab_t","lbl_tab_ia","lbl_tab_ex","lbl_tab_cfg",
+    "lbl_add","lbl_inv","lbl_list","lbl_cond","lbl_produit",
+    "lbl_resultats","lbl_ia","lbl_export",
+]
+
 with tab_cfg:
 
-    # ── 1. Général ────────────────────────────────────────────────────────────
-    with st.expander("🌐 Général", expanded=True):
+    p_gen, p_reac, p_tab, p_ia = st.tabs(["🌐 Général", "🧪 Réactifs", "📊 Tableau", "🤖 IA"])
+
+    # ── Général ───────────────────────────────────────────────────────────────
+    with p_gen:
+        st.markdown("### Page & navigation")
         g1, g2 = st.columns(2)
         with g1:
             _cp("Fond de la page", "th_bg")
-            _cp("Couleur du texte", "th_text")
+            _cp("Couleur du texte global", "th_text")
+            _sl("Taille police globale (px)", "th_font_size", 10, 24)
         with g2:
-            _sl("Taille de police globale (px)", "th_font_size", 10, 24)
+            st.markdown("**Onglets**")
+            _cp("Barre des onglets", "th_tab_bar")
+            _cp("Texte onglets inactifs", "th_tab_text")
+            _cp("Fond onglet actif", "th_tab_act_bg")
+            _cp("Texte onglet actif", "th_tab_act_txt")
 
-    # ── 2. Info box (résultat n limitant) ─────────────────────────────────────
-    with st.expander("📦 Boîte résultat (haut de page)"):
-        ib1, ib2 = st.columns(2)
-        with ib1:
+        st.markdown("### Champs de saisie")
+        i1, i2 = st.columns(2)
+        with i1:
+            _cp("Fond des champs", "th_inp_bg")
+            _cp("Texte des champs", "th_inp_text")
+        with i2:
+            _cp("Bordure des champs", "th_inp_border")
+            _sl("Taille police champs (px)", "th_inp_fs", 10, 22)
+
+        st.markdown("### Boutons")
+        b1, b2 = st.columns(2)
+        with b1:
+            _cp("Fond des boutons", "th_btn_bg")
+            _cp("Texte des boutons", "th_btn_text")
+        with b2:
+            _sl("Taille police boutons (px)", "th_btn_fs", 10, 22)
+
+        st.markdown("### Boîte résultat (n limitant)")
+        r1, r2 = st.columns(2)
+        with r1:
             _cp("Fond", "th_ib_bg")
             _cp("Texte", "th_ib_text")
-        with ib2:
+        with r2:
             _sl("Taille police (px)", "th_ib_fs", 10, 24)
 
-    # ── 3. Onglets ────────────────────────────────────────────────────────────
-    with st.expander("📑 Onglets"):
-        o1, o2 = st.columns(2)
-        with o1:
-            _cp("Fond de la barre d'onglets", "th_tab_bar")
-            _cp("Texte des onglets inactifs", "th_tab_text")
-        with o2:
-            _cp("Fond de l'onglet actif", "th_tab_act_bg")
-            _cp("Texte de l'onglet actif", "th_tab_act_txt")
+        st.markdown("### Noms des onglets")
+        n1, n2 = st.columns(2)
+        with n1:
+            _ti("Titre de l'application", "lbl_titre")
+            _ti("Onglet Réactifs", "lbl_tab_r")
+            _ti("Onglet Tableau", "lbl_tab_t")
+        with n2:
+            _ti("Onglet IA", "lbl_tab_ia")
+            _ti("Onglet Export", "lbl_tab_ex")
+            _ti("Onglet Paramètres", "lbl_tab_cfg")
 
-    # ── 4. Cartes réactifs ────────────────────────────────────────────────────
-    with st.expander("🧪 Cartes réactifs"):
-        cr1, cr2 = st.columns(2)
-        with cr1:
+    # ── Réactifs ──────────────────────────────────────────────────────────────
+    with p_reac:
+        st.markdown("### Titres de la section")
+        t1, t2 = st.columns(2)
+        with t1:
+            _ti("Titre 'Ajouter un réactif'", "lbl_add")
+            _ti("Label inventaire", "lbl_inv")
+            _ti("Titre liste réactifs", "lbl_list")
+        with t2:
+            _ti("Titre conditions", "lbl_cond")
+            _ti("Titre produit", "lbl_produit")
+
+        st.markdown("### Cartes réactifs")
+        c1, c2 = st.columns(2)
+        with c1:
             _cp("Fond de la carte", "th_card_bg")
-            _sl("Police nom du composé (px)", "th_card_name_fs", 10, 24)
+            _sl("Police nom composé (px)", "th_card_name_fs", 10, 24)
             _sl("Police infos MW/masse (px)", "th_card_info_fs", 9, 20)
-        with cr2:
-            st.markdown("**Bordures par rôle**")
+        with c2:
+            st.markdown("**Couleur bordure gauche**")
             _cp("Limitant", "th_bord_lim")
             _cp("Réactif", "th_bord_reac")
             _cp("Solvant", "th_bord_solv")
             _cp("Catalyseur", "th_bord_cat")
             _cp("Autre", "th_bord_aut")
 
-    # ── 5. Badges rôle ────────────────────────────────────────────────────────
-    with st.expander("🏷️ Badges de rôle"):
+        st.markdown("### Badges de rôle")
         bd1, bd2 = st.columns(2)
         with bd1:
             _cp("Limitant", "th_badge_lim")
@@ -1222,57 +1285,30 @@ with tab_cfg:
             _cp("Catalyseur", "th_badge_cat")
             _cp("Autre", "th_badge_aut")
 
-    # ── 6. Boutons ────────────────────────────────────────────────────────────
-    with st.expander("🔘 Boutons"):
-        bt1, bt2 = st.columns(2)
-        with bt1:
-            _cp("Fond des boutons", "th_btn_bg")
-            _cp("Texte des boutons", "th_btn_text")
-        with bt2:
-            _sl("Taille police boutons (px)", "th_btn_fs", 10, 22)
+    # ── Tableau ───────────────────────────────────────────────────────────────
+    with p_tab:
+        st.markdown("### Titres")
+        _ti("Titre de la section résultats", "lbl_resultats")
+        st.markdown("### Export")
+        _ti("Titre section Export", "lbl_export")
 
-    # ── 7. Renommer les titres ─────────────────────────────────────────────────
-    with st.expander("✏️ Titres & étiquettes"):
-        lb1, lb2 = st.columns(2)
-        with lb1:
-            _ti("Titre principal de l'app", "lbl_titre")
-            _ti("Onglet Réactifs", "lbl_tab_r")
-            _ti("Onglet Tableau", "lbl_tab_t")
-            _ti("Onglet IA", "lbl_tab_ia")
-            _ti("Onglet Export", "lbl_tab_ex")
-            _ti("Onglet Paramètres", "lbl_tab_cfg")
-            _ti("Inventaire (label selectbox)", "lbl_inv")
-        with lb2:
-            _ti("Titre 'Ajouter un réactif'", "lbl_add")
-            _ti("Titre 'Réactifs ajoutés'", "lbl_list")
-            _ti("Titre 'Conditions'", "lbl_cond")
-            _ti("Titre 'Produit'", "lbl_produit")
-            _ti("Titre 'Résultats'", "lbl_resultats")
-            _ti("Titre section IA", "lbl_ia")
-            _ti("Titre section Export", "lbl_export")
-
-    # ── 8. Reset total ────────────────────────────────────────────────────────
-    st.divider()
-    if st.button("↩️ Tout réinitialiser (apparence + titres)"):
-        for k in ["th_bg","th_text","th_font_size","th_ib_bg","th_ib_text","th_ib_fs",
-                  "th_tab_bar","th_tab_text","th_tab_act_bg","th_tab_act_txt",
-                  "th_card_bg","th_card_name_fs","th_card_info_fs",
-                  "th_bord_lim","th_bord_reac","th_bord_solv","th_bord_cat","th_bord_aut",
-                  "th_badge_lim","th_badge_reac","th_badge_solv","th_badge_cat","th_badge_aut",
-                  "th_btn_bg","th_btn_text","th_btn_fs",
-                  "lbl_titre","lbl_tab_r","lbl_tab_t","lbl_tab_ia","lbl_tab_ex","lbl_tab_cfg",
-                  "lbl_add","lbl_inv","lbl_list","lbl_cond","lbl_produit",
-                  "lbl_resultats","lbl_ia","lbl_export"]:
-            del st.session_state[k]
-        st.rerun()
-
-    st.divider()
     # ── IA ────────────────────────────────────────────────────────────────────
-    st.subheader("🤖 Statut IA")
-    provider_actif = charger_provider()
-    key_ok = bool(charger_api_key(provider_actif))
-    if key_ok:
-        st.success(f"✅ Fournisseur actif : **{provider_actif}** — clé configurée")
-    else:
-        st.error("❌ Aucune clé API trouvée dans `.streamlit/secrets.toml`")
-    st.markdown("**À propos** — Stœchiométrie H&B · Streamlit + Gemini / Groq + PubChem")
+    with p_ia:
+        st.markdown("### Titres")
+        _ti("Titre section IA", "lbl_ia")
+        st.divider()
+        provider_actif = charger_provider()
+        key_ok = bool(charger_api_key(provider_actif))
+        if key_ok:
+            st.success(f"✅ Fournisseur : **{provider_actif}** — clé OK")
+        else:
+            st.error("❌ Clé API manquante dans `.streamlit/secrets.toml`")
+
+    # ── Reset global ──────────────────────────────────────────────────────────
+    st.divider()
+    if st.button("↩️ Tout réinitialiser"):
+        for k in _ALL_TH_KEYS:
+            if k in st.session_state:
+                del st.session_state[k]
+        st.rerun()
+    st.markdown("*Stœchiométrie H&B · Streamlit + Gemini / Groq + PubChem*")
