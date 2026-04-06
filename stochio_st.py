@@ -580,7 +580,7 @@ _TH_KEYS_PERSIST = [
     "th_badge_lim","th_badge_reac","th_badge_solv","th_badge_cat","th_badge_aut",
     "th_btn_bg","th_btn_text","th_btn_fs",
     "cfg_layout",
-    "lbl_titre","lbl_tab_r","lbl_tab_t","lbl_tab_ia","lbl_tab_ex","lbl_tab_cfg",
+    "lbl_titre","lbl_tab_r","lbl_tab_t","lbl_tab_ia","lbl_tab_ex","lbl_tab_pdms","lbl_tab_cfg",
     "lbl_add","lbl_inv","lbl_list","lbl_cond","lbl_produit",
     "lbl_resultats","lbl_ia","lbl_export",
 ] + [f"{p}_{s}" for p in _FONT_PREFIXES for s in ("family","bold","italic")]
@@ -671,6 +671,7 @@ def _init():
         "lbl_tab_t":      "📊 Tableau",
         "lbl_tab_ia":     "🤖 IA",
         "lbl_tab_ex":     "📤 Export",
+        "lbl_tab_pdms":   "🔬 PDMS",
         "lbl_tab_cfg":    "⚙️ Paramètres",
         "lbl_add":        "Ajouter un réactif",
         "lbl_inv":        "📦 Depuis mon inventaire",
@@ -936,8 +937,8 @@ st.divider()
 
 # ── TABS ──────────────────────────────────────────────────────────────────────
 _s = st.session_state
-tab_r, tab_t, tab_ia, tab_ex, tab_cfg = st.tabs(
-    [_s.lbl_tab_r, _s.lbl_tab_t, _s.lbl_tab_ia, _s.lbl_tab_ex, _s.lbl_tab_cfg]
+tab_r, tab_t, tab_ia, tab_ex, tab_pdms, tab_cfg = st.tabs(
+    [_s.lbl_tab_r, _s.lbl_tab_t, _s.lbl_tab_ia, _s.lbl_tab_ex, _s.lbl_tab_pdms, _s.lbl_tab_cfg]
 )
 
 # ===========================================================================
@@ -1333,6 +1334,189 @@ with tab_ex:
                 st.error(f"Erreur PDF : {e}")
 
 # ===========================================================================
+# TAB PDMS — Calculateur copolymère silicone
+# ===========================================================================
+_PDMS_MOTIFS_DEFAULT = [
+    ("SiMe2",  74.0),
+    ("SiMeH",  60.0),
+    ("SiMeVi", 86.0),
+    ("SiPh2",  198.0),
+    ("SiEt2",  102.0),
+    ("SiMe2O", 74.0),
+    ("Motif G", 74.0),
+    ("Motif H", 74.0),
+]
+
+with tab_pdms:
+    st.markdown("### Calculateur PDMS / copolymère silicone")
+    st.caption(
+        "Renseigne la masse molaire cible, les motifs du copolymère (nom, MW unitaire, "
+        "% molaire) et l'agent terminateur. L'outil calcule le degré de polymérisation "
+        "et, en option, les masses à peser."
+    )
+
+    # ── Paramètres principaux ─────────────────────────────────────────────────
+    p1, p2 = st.columns(2)
+    with p1:
+        pdms_mw_target = st.number_input(
+            "Masse molaire cible (g/mol)",
+            min_value=100.0, max_value=5_000_000.0,
+            value=float(st.session_state.get("pdms_mw_target", 10000.0)),
+            step=100.0, key="pdms_mw_target",
+        )
+    with p2:
+        pdms_n_motifs = int(st.number_input(
+            "Nombre de types de motifs",
+            min_value=1, max_value=8,
+            value=int(st.session_state.get("pdms_n_motifs", 2)),
+            step=1, key="pdms_n_motifs",
+        ))
+
+    # ── Tableau des motifs ────────────────────────────────────────────────────
+    st.markdown("**Motifs du copolymère**")
+    hc = st.columns([2, 1.5, 1.5])
+    hc[0].markdown("*Nom / type*")
+    hc[1].markdown("*MW motif (g/mol)*")
+    hc[2].markdown("*% molaire*")
+
+    pdms_motifs = []
+    for _i in range(pdms_n_motifs):
+        _def_name, _def_mw = _PDMS_MOTIFS_DEFAULT[_i] if _i < len(_PDMS_MOTIFS_DEFAULT) else (f"Motif {_i+1}", 74.0)
+        _def_pct = round(100.0 / pdms_n_motifs, 1)
+        _mc1, _mc2, _mc3 = st.columns([2, 1.5, 1.5])
+        with _mc1:
+            _mn = st.text_input(
+                "Nom", placeholder=_def_name,
+                key=f"pdms_name_{_i}", label_visibility="collapsed",
+            )
+        with _mc2:
+            _mw = st.number_input(
+                "MW", min_value=0.01, step=0.01,
+                value=float(st.session_state.get(f"pdms_mw_m_{_i}", _def_mw)),
+                key=f"pdms_mw_m_{_i}", label_visibility="collapsed",
+            )
+        with _mc3:
+            _pct = st.number_input(
+                "%", min_value=0.0, max_value=100.0, step=0.1,
+                value=float(st.session_state.get(f"pdms_pct_{_i}", _def_pct)),
+                key=f"pdms_pct_{_i}", label_visibility="collapsed",
+            )
+        pdms_motifs.append({"name": _mn or _def_name, "mw": _mw, "pct": _pct})
+
+    _pct_total = sum(m["pct"] for m in pdms_motifs)
+    if abs(_pct_total - 100.0) > 0.1:
+        st.warning(f"Somme des % = **{_pct_total:.1f} %** — doit être 100 %")
+
+    # ── Agent terminateur ─────────────────────────────────────────────────────
+    st.markdown("**Agent terminateur**")
+    _tc1, _tc2 = st.columns([2, 1.5])
+    with _tc1:
+        pdms_term_name = st.text_input(
+            "Nom terminateur",
+            value=st.session_state.get("pdms_term_name_val", ""),
+            placeholder="ex: MM, TMS-OH, PDMS-OH…",
+            key="pdms_term_name",
+        )
+        st.session_state["pdms_term_name_val"] = pdms_term_name
+    with _tc2:
+        pdms_mw_term = st.number_input(
+            "MW terminateur (g/mol)",
+            min_value=0.0, step=0.01,
+            value=float(st.session_state.get("pdms_mw_term", 0.0)),
+            key="pdms_mw_term",
+        )
+
+    # ── Masse de synthèse (optionnel) ─────────────────────────────────────────
+    st.divider()
+    pdms_do_mass = st.checkbox(
+        "Calculer les masses à peser", key="pdms_do_mass",
+    )
+    if pdms_do_mass:
+        _sm_col, _ = st.columns([1, 2])
+        with _sm_col:
+            pdms_synth_mass = st.number_input(
+                "Masse totale visée (g)",
+                min_value=0.001, step=0.1,
+                value=float(st.session_state.get("pdms_synth_mass", 1.0)),
+                key="pdms_synth_mass",
+            )
+    else:
+        pdms_synth_mass = 1.0
+
+    # ── Bouton Calculer ───────────────────────────────────────────────────────
+    if st.button("⚗️ Calculer", key="pdms_btn_calc", type="primary"):
+        if abs(_pct_total - 100.0) > 0.5:
+            st.session_state["pdms_results"] = None
+        else:
+            _fracs = [m["pct"] / 100.0 for m in pdms_motifs]
+            _mw_avg = sum(f * m["mw"] for f, m in zip(_fracs, pdms_motifs))
+            if _mw_avg <= 0:
+                st.session_state["pdms_results"] = None
+            else:
+                _dp = (pdms_mw_target - pdms_mw_term) / _mw_avg
+                _mw_calc = _mw_avg * _dp + pdms_mw_term
+                _rows_comp = []
+                for _f, _m in zip(_fracs, pdms_motifs):
+                    _ni = _f * _dp
+                    _rows_comp.append({
+                        "Motif": _m["name"],
+                        "MW unitaire (g/mol)": f"{_m['mw']:.2f}",
+                        "Fraction mol.": f"{_f:.3f}",
+                        "n motifs": f"{_ni:.1f}",
+                        "Contrib. MW (g/mol)": f"{_ni * _m['mw']:.1f}",
+                    })
+                if pdms_mw_term > 0:
+                    _rows_comp.append({
+                        "Motif": pdms_term_name or "Terminateur",
+                        "MW unitaire (g/mol)": f"{pdms_mw_term:.2f}",
+                        "Fraction mol.": "—",
+                        "n motifs": "1",
+                        "Contrib. MW (g/mol)": f"{pdms_mw_term:.1f}",
+                    })
+                _rows_mass = []
+                if pdms_do_mass:
+                    _moles_chain = pdms_synth_mass / _mw_calc
+                    for _f, _m in zip(_fracs, pdms_motifs):
+                        _ni = _f * _dp
+                        _mol_i = _ni * _moles_chain
+                        _rows_mass.append({
+                            "Composant": _m["name"],
+                            "n / chaîne": f"{_ni:.1f}",
+                            "n (mmol)": f"{_mol_i * 1000:.3f}",
+                            "Masse (g)": f"{_mol_i * _m['mw']:.4f}",
+                        })
+                    if pdms_mw_term > 0:
+                        _mol_t = _moles_chain
+                        _rows_mass.append({
+                            "Composant": pdms_term_name or "Terminateur",
+                            "n / chaîne": "1",
+                            "n (mmol)": f"{_mol_t * 1000:.3f}",
+                            "Masse (g)": f"{_mol_t * pdms_mw_term:.4f}",
+                        })
+                st.session_state["pdms_results"] = {
+                    "dp": _dp,
+                    "mw_calc": _mw_calc,
+                    "mw_target": pdms_mw_target,
+                    "rows_comp": _rows_comp,
+                    "rows_mass": _rows_mass,
+                    "synth_mass": pdms_synth_mass if pdms_do_mass else None,
+                }
+
+    # ── Affichage résultats ───────────────────────────────────────────────────
+    _pdms_res = st.session_state.get("pdms_results")
+    if _pdms_res:
+        st.success(
+            f"**DP = {_pdms_res['dp']:.1f}** "
+            f"· MW calculée = **{_pdms_res['mw_calc']:.0f} g/mol** "
+            f"(cible : {_pdms_res['mw_target']:.0f} g/mol)"
+        )
+        st.markdown("**Composition du copolymère**")
+        st.table(pd.DataFrame(_pdms_res["rows_comp"]))
+        if _pdms_res["rows_mass"]:
+            st.markdown(f"**Masses à peser pour {_pdms_res['synth_mass']:.3f} g de polymère**")
+            st.table(pd.DataFrame(_pdms_res["rows_mass"]))
+
+# ===========================================================================
 # TAB 5 — Paramètres
 # ===========================================================================
 def _fo(prefix, default_bold=False):
@@ -1387,7 +1571,7 @@ _ALL_TH_KEYS = [
     "th_bord_lim","th_bord_reac","th_bord_solv","th_bord_cat","th_bord_aut",
     "th_badge_lim","th_badge_reac","th_badge_solv","th_badge_cat","th_badge_aut",
     "th_btn_bg","th_btn_text","th_btn_fs",
-    "lbl_titre","lbl_tab_r","lbl_tab_t","lbl_tab_ia","lbl_tab_ex","lbl_tab_cfg",
+    "lbl_titre","lbl_tab_r","lbl_tab_t","lbl_tab_ia","lbl_tab_ex","lbl_tab_pdms","lbl_tab_cfg",
     "lbl_add","lbl_inv","lbl_list","lbl_cond","lbl_produit",
     "lbl_resultats","lbl_ia","lbl_export",
 ]
@@ -1450,6 +1634,7 @@ def _cfg_general():
         with n2:
             _ti("Onglet IA", "lbl_tab_ia")
             _ti("Onglet Export", "lbl_tab_ex")
+            _ti("Onglet PDMS", "lbl_tab_pdms")
             _ti("Onglet Paramètres", "lbl_tab_cfg")
 
 def _cfg_reactifs():
